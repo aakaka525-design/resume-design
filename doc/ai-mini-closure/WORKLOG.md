@@ -2,17 +2,20 @@
 
 Date: 2026-02-23
 
+> Path note: historical mention `resume-backend` has been migrated.
+> Current backend path: `/Users/xa/Desktop/简历/resume-design/backend`.
+
 ## Phase 1 - B-3 Test First (RED)
-- Added test file: `/Users/xa/Desktop/简历/resume-backend/examples/test_payment_idempotency.py`.
+- Added test file: `/Users/xa/Desktop/简历/resume-design/backend/examples/test_payment_idempotency.py`.
 - Ran:
-  - `source /Users/xa/Desktop/简历/resume-backend/venv/bin/activate`
-  - `cd /Users/xa/Desktop/简历/resume-backend`
+  - `source /Users/xa/Desktop/简历/resume-design/backend/venv/bin/activate`
+  - `cd /Users/xa/Desktop/简历/resume-design/backend`
   - `pytest examples/test_payment_idempotency.py -q`
 - Expected failure observed:
   - `ModuleNotFoundError: No module named 'examples.payment_idempotency'`
 
 ## Phase 2 - Minimal Implementation (GREEN)
-- Added implementation: `/Users/xa/Desktop/简历/resume-backend/examples/payment_idempotency.py`.
+- Added implementation: `/Users/xa/Desktop/简历/resume-design/backend/examples/payment_idempotency.py`.
 - Implemented state machine:
   - `PENDING -> PAID`
   - `PENDING -> CANCELLED`

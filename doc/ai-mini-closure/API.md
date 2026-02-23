@@ -2,9 +2,12 @@
 
 Date: 2026-02-23
 
+> Path note: project layout changed to `frontend/ + backend/`.  
+> Current backend path: `/Users/xa/Desktop/简历/resume-design/backend`.
+
 ## B-3 Simulation Contract
 Module:
-- `/Users/xa/Desktop/简历/resume-backend/examples/payment_idempotency.py`
+- `/Users/xa/Desktop/简历/resume-design/backend/examples/payment_idempotency.py`
 
 Class:
 - `PaymentStore`

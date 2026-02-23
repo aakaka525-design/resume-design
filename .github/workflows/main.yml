@@ -9,16 +9,19 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
     steps:
       - uses: actions/checkout@v2
       - name: npm install -g pnpm
         run: npm install -g pnpm
       - name: pnpm install
         run: pnpm install
-      - name: npm run build
+      - name: pnpm build
         env:
           NODE_OPTIONS: '--max_old_space_size=4096'
-        run: export NODE_OPTIONS="--max_old_space_size=4096" && npm run build
+        run: export NODE_OPTIONS="--max_old_space_size=4096" && pnpm run build
       # 命名这个任务为发布Deploy
       - name: Deploy
         # 因为构建之后，需要把代码上传到服务器上，所以需要连接到ssh，并且做一个拷贝操作
@@ -31,5 +34,5 @@ jobs:
           user: ${{ secrets.USER_NAME }}
           pass: ${{ secrets.USER_PASS }}
           connect_timeout: 10s
-          local: './dist/*'
+          local: './frontend/dist/*'
           remote: /www/wwwroot/resume-design/dist

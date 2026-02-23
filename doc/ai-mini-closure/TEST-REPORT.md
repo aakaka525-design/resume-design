@@ -2,11 +2,14 @@
 
 Date: 2026-02-23
 
+> Path note: repository now uses `frontend/ + backend/`.  
+> Current backend path: `/Users/xa/Desktop/简历/resume-design/backend`.
+
 ## 1) B-3 TDD RED Evidence
 Command:
 ```bash
-source /Users/xa/Desktop/简历/resume-backend/venv/bin/activate
-cd /Users/xa/Desktop/简历/resume-backend
+source /Users/xa/Desktop/简历/resume-design/backend/venv/bin/activate
+cd /Users/xa/Desktop/简历/resume-design/backend
 pytest examples/test_payment_idempotency.py -q
 ```
 
@@ -19,8 +22,8 @@ Result:
 ## 2) B-3 TDD GREEN Evidence
 Command:
 ```bash
-source /Users/xa/Desktop/简历/resume-backend/venv/bin/activate
-cd /Users/xa/Desktop/简历/resume-backend
+source /Users/xa/Desktop/简历/resume-design/backend/venv/bin/activate
+cd /Users/xa/Desktop/简历/resume-design/backend
 pytest examples/test_payment_idempotency.py -q
 ```
 
