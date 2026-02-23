@@ -453,3 +453,202 @@
 - Repository layout now matches requested structure (`frontend/` + `backend/`).
 - Core local editing workflow remains verifiable under the new path model.
 - Documentation and helper scripts are now consistent with the reorganized directory tree.
+
+### Phase 20 - Template Missing Root Cause Fix and Compatibility Hardening (2026-02-23)
+
+#### Background
+- User reported: resume template list disappeared on `/resume`.
+- This was traced under the new `frontend + backend` layout.
+
+#### Root Cause Summary
+1. Template data depends on backend startup seeding after data reset.
+2. Seed file lookup path was single-path and fragile for cross-layout runs.
+3. Category API lacked frontend-expected keys (`category_label`, `category_value`), causing style metadata mismatch.
+
+#### Changes Implemented
+1. `/Users/xa/Desktop/简历/resume-design/backend/main.py`
+- Added multi-layout seed file resolver for `templates.json`:
+  - `../frontend/public/static/templates.json`
+  - `../public/static/templates.json`
+  - `../../resume-design/frontend/public/static/templates.json`
+- Added duplicate ID de-duplication in template seed loading to avoid duplicate insert risk.
+
+2. `/Users/xa/Desktop/简历/resume-design/backend/models/template.py`
+- `TemplateCategory.to_dict()` now includes:
+  - `label`, `value`, `category_label`, `category_value`
+- `Template.to_dict()` now sets `template_style` to real `category` value.
+
+3. `/Users/xa/Desktop/简历/resume-design/backend/routers/common.py`
+- Added category payload helper with fallback:
+  - Prefer `template_categories` table.
+  - If empty, derive categories from existing `templates.category`.
+
+#### Commands and Results
+1. Syntax check
+- `python3 -m py_compile backend/main.py backend/models/template.py backend/routers/common.py` -> PASS
+
+2. Data presence check
+- `sqlite3 backend/resume.db "SELECT 'templates',count(*) FROM templates UNION ALL SELECT 'template_categories',count(*) FROM template_categories;"`
+- Result:
+  - `templates|108`
+  - `template_categories|1`
+
+3. Runtime API spot checks
+- `curl -s 'http://127.0.0.1:8000/huajian/common/getTemplateCategoryList'`
+  - Contains `category_label` and `category_value`.
+- `curl -s 'http://127.0.0.1:8000/huajian/common/templateList?page=1&limit=1&templateStatus=1'`
+  - Returns template list and `template_style` field.
+
+#### Conclusion
+- Template list recovery path is now robust to directory structure changes.
+- Frontend-required category/style compatibility fields are restored.
+
+### Phase 21 - Empty Template Content Fix (Frontend Fallback Initialization) (2026-02-23)
+
+#### Issue
+- User reported template has no content after entering template detail/editor.
+- Reproduced on template id `6746fe472f0052cb6a9365aa`.
+
+#### Root Cause
+1. Backend seed writes template metadata plus minimal JSON shell only.
+2. Seeded `template_json.componentsTree` is empty, so detail and editor render blank data area.
+3. Existing frontend path trusted backend payload directly and had no fallback initializer.
+
+#### RED (Failing Reproduction)
+- Command:
+  - `python3` script requesting `/huajian/common/template/{id}` and asserting `componentsTree.length > 0`.
+- Result:
+  - `componentsTree_length=0`
+  - `FAIL: template content is empty`
+
+#### Code Changes
+1. Added template content fallback utility:
+- `/Users/xa/Desktop/简历/resume-design/frontend/src/views/createTemplate/designer/utils/ensureTemplateContent.ts`
+- Capabilities:
+  - Detect empty/invalid template JSON.
+  - Build starter template content from built-in module schemas.
+  - Auto-fill title/page/config structure.
+  - Deterministically choose module variants by template id hash.
+
+2. Integrated fallback in resume detail load path:
+- `/Users/xa/Desktop/简历/resume-design/frontend/src/views/resumeContent/index.vue`
+- When backend returns empty `template_json`, auto-generate complete starter modules for preview/use.
+
+3. Integrated fallback in resume editor load path:
+- `/Users/xa/Desktop/简历/resume-design/frontend/src/views/designerResume/index.vue`
+- Applied for both template fetch and user draft fetch paths.
+
+4. Integrated fallback in template import action:
+- `/Users/xa/Desktop/简历/resume-design/frontend/src/views/designerResume/components/ResumeCard.vue`
+- Import path now handles empty template payload safely.
+
+#### Verification Commands and Results
+1. Static checks
+- `cd frontend && pnpm exec vue-tsc --noEmit` -> PASS
+- `cd frontend && pnpm exec eslint src/views/createTemplate/designer/utils/ensureTemplateContent.ts src/views/resumeContent/index.vue src/views/designerResume/index.vue src/views/designerResume/components/ResumeCard.vue` -> PASS
+
+2. Browser verification (Playwright CLI)
+- Opened `/resumedetail/6746fe472f0052cb6a9365aa`
+  - Snapshot: `.playwright-cli/page-2026-02-23T07-43-01-195Z.yml`
+  - Evidence contains module headings: `求职意向`, `技能特长` etc.
+- Opened `/designResume/6746fe472f0052cb6a9365aa`
+  - Snapshot: `.playwright-cli/page-2026-02-23T07-43-47-599Z.yml`
+  - Evidence contains populated modules in config + preview: `基本资料`, `求职意向`, `教育背景`, `技能特长`.
+
+#### Conclusion
+- Empty-template rendering issue is fixed at frontend consumption layer.
+- Existing empty seeded templates are now auto-initialized into usable content without DB reset.
+
+### Phase 22 - Template Cover Preview Recovery (2026-02-23)
+
+#### Issue
+- User feedback: template cover preview looks incorrect.
+
+#### Root Cause Investigation
+1. Data source check:
+- `templates` table had `108` rows but only `1` distinct `preview_img`.
+- All rows used the same placeholder `/static/img/normal.webp`.
+2. Seed logic check:
+- Backend startup seeded templates from `frontend/public/static/templates.json` (id/title only), forcing placeholder cover and minimal JSON.
+3. Available real source:
+- `frontend/ssr-data/resume.templates.json` exists and contains:
+  - real `template_cover`
+  - full `template_json`
+  - `template_style/template_views/template_status`
+
+#### Fix Implemented
+1. Enhanced backend seed path resolver:
+- support both metadata seed and full seed file under new/old layouts.
+2. Added full seed loader and normalization:
+- parse Mongo-style `_id.$oid` safely.
+- extract cover/style/status/views/full template JSON.
+3. Upgraded template bootstrap logic:
+- if DB empty and full seed exists: initialize templates from full seed directly.
+- if DB already exists: backfill placeholder rows (cover/category/json/views/status).
+4. Added category row auto-creation from recovered style values.
+
+#### File Changes
+- `/Users/xa/Desktop/简历/resume-design/backend/main.py`
+
+#### Verification Commands and Results
+1. Syntax check
+- `python3 -m py_compile backend/main.py` -> PASS
+
+2. Distinct cover check
+- `sqlite3 backend/resume.db "select count(*),count(distinct preview_img) from templates;"`
+- Result: `108|108`
+
+3. Sample row quality check
+- JSON parse from DB row confirms `componentsTree` length > 0 (e.g. 13)
+- Cover URL is real template image URL (not placeholder)
+
+4. Guard assertion script
+- checks: `cover_kinds > 1` and `componentsTree > 0`
+- Result: PASS
+
+#### Conclusion
+- Cover preview issue was data-quality regression from simplified seed path.
+- Backend now restores real cover images and full template content automatically.
+
+### Phase 23 - Import Existing Resume Data Failure Fix (2026-02-23)
+
+#### Issue
+- User feedback: cannot import existing saved resume data from editor import dialog.
+
+#### Root Cause
+1. Frontend import action expects each list item to include `template_json`.
+2. API `/huajian/createUserTemplate/getMyResumeList` returned list items via `to_dict()` only, missing `template_json`.
+3. Import action in `ResumeCard.vue` therefore failed on pre-check and exited.
+
+#### RED Reproduction
+- API check script showed list row has no `template_json`.
+- Result: `FAIL: import list item missing template_json`.
+
+#### Fix Implemented
+1. Backend list payload upgrade:
+- `/Users/xa/Desktop/简历/resume-design/backend/routers/create_template.py`
+- `getMyResumeList` now returns `to_detail_dict()` items (includes `template_json`).
+
+2. Model field compatibility:
+- `/Users/xa/Desktop/简历/resume-design/backend/models/user_resume.py`
+- Added `template_id` alias (in addition to `templateId`) to align with existing frontend filter logic.
+
+3. Frontend dialog robustness:
+- `/Users/xa/Desktop/简历/resume-design/frontend/src/views/designerResume/components/ImportOtherResumeDataDialog.vue`
+- Improved response envelope parsing and field fallback.
+- Added robust ID filtering (`template_id/templateId/id`) and preview fallback.
+
+#### Verification Commands and Results
+1. Backend syntax
+- `python3 -m py_compile backend/models/user_resume.py backend/routers/create_template.py` -> PASS
+
+2. Frontend checks
+- `cd frontend && pnpm exec vue-tsc --noEmit` -> PASS
+- `cd frontend && pnpm exec eslint src/views/designerResume/components/ImportOtherResumeDataDialog.vue` -> PASS
+
+3. API assertion
+- Script checks first item of `getMyResumeList` contains object `template_json` and non-empty `componentsTree`.
+- Result: PASS (`has_template_json=True`, `components_len=12`).
+
+#### Conclusion
+- Import dialog now receives required template payload and can import existing resume data.

@@ -13,6 +13,7 @@
   import appStore from '@/store';
   import { storeToRefs } from 'pinia';
   import { cloneDeep } from 'lodash';
+  import { ensureTemplateContent } from '@/views/createTemplate/designer/utils/ensureTemplateContent';
   import { ElMessageBox, ElNotification } from 'element-plus';
 
   const props = defineProps<{
@@ -32,8 +33,13 @@
   // 点击导入数据
   const importData = async () => {
     try {
+      const importTemplateJson = ensureTemplateContent(props.cardData?.template_json, {
+        templateId: String(props.cardData?._id || props.cardData?.id || ''),
+        title: props.cardData?.template_title || '猫步简历'
+      });
+
       // 1. 检查是否有可导入的数据
-      if (!props.cardData?.template_json?.componentsTree?.length) {
+      if (!importTemplateJson?.componentsTree?.length) {
         console.error('导入数据失败：缺少有效的模板数据');
         return;
       }
@@ -58,7 +64,6 @@
       console.log('开始导入数据', props.cardData);
 
       // 3. 获取数据
-      const importTemplateJson = props.cardData.template_json;
       const { HJNewJsonStore } = storeToRefs(appStore.useCreateTemplateStore);
 
       // 4. 深度克隆当前模板

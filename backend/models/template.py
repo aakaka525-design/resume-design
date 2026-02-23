@@ -99,6 +99,10 @@ class TemplateCategory(Base):
         return {
             "_id": self.id,
             "name": self.name,
+            "label": self.name,
+            "value": self.name,
+            "category_label": self.name,
+            "category_value": self.name,
             "sortOrder": self.sort_order,
             "createdAt": self.created_at.isoformat() if self.created_at else "",
         }
@@ -138,7 +142,7 @@ class Template(Base):
             "title": template_title,
             "template_title": template_title,
             "category": self.category,
-            "template_style": "",
+            "template_style": self.category,
             "template_use": "",
             "template_industry": "",
             "previewImg": self.preview_img,

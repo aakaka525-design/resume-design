@@ -95,7 +95,7 @@ def get_my_resume_list(
     total = query.count()
     resumes = query.order_by(CreateUserTemplate.updated_at.desc()).offset((page - 1) * limit).limit(limit).all()
     return api_response(data={
-        "list": [r.to_dict() for r in resumes],
+        "list": [r.to_detail_dict() for r in resumes],
         "total": total,
         "page": _page_info(page, limit, total),
         "currentPage": page,

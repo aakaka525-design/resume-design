@@ -419,3 +419,138 @@ Date: `2026-02-23`
 - Directory structure now matches requested monorepo shape.
 - Frontend/backend adaptation is valid under new paths.
 - Core resume+lego local editing chain remains buildable and testable.
+
+## 16) Resume Template Recovery and Category Compatibility
+Date: `2026-02-23`
+
+### Scope
+1. Verify `/resume` template source availability after layout migration.
+2. Verify category API compatibility with frontend selector fields.
+3. Verify template list response contains style field expected by UI.
+
+### Verification Commands and Results
+1. Backend syntax
+- Command: `python3 -m py_compile backend/main.py backend/models/template.py backend/routers/common.py`
+- Result: PASS
+
+2. Database data check
+- Command: `sqlite3 backend/resume.db "SELECT 'templates',count(*) FROM templates UNION ALL SELECT 'template_categories',count(*) FROM template_categories;"`
+- Result:
+  - `templates|108`
+  - `template_categories|1`
+- Status: PASS
+
+3. Category API field check
+- Command: `curl -s 'http://127.0.0.1:8000/huajian/common/getTemplateCategoryList'`
+- Result: response items include `category_label` + `category_value`.
+- Status: PASS
+
+4. Template list API check
+- Command: `curl -s 'http://127.0.0.1:8000/huajian/common/templateList?page=1&limit=1&templateStatus=1'`
+- Result: non-empty `list`; item includes `template_style`.
+- Status: PASS
+
+### Conclusion
+- Resume template list data is available and API contracts match frontend expectations for category/style fields.
+- Migration-induced template disappearance risk is mitigated by seed path fallback and compatibility mapping.
+
+## 17) Empty Template Content Recovery (Detail + Editor)
+Date: `2026-02-23`
+
+### Scope
+1. Reproduce and confirm empty template content root cause.
+2. Verify `/resumedetail/:id` renders populated modules.
+3. Verify `/designResume/:id` editor loads populated module data.
+
+### RED Reproduction
+1. Template content API check
+- Command: Python assertion script against `GET /huajian/common/template/{id}`
+- Template id: `6746fe472f0052cb6a9365aa`
+- Result: `componentsTree_length=0` -> FAIL (expected before fix)
+
+### Verification After Fix
+1. Static checks
+- `cd /Users/xa/Desktop/简历/resume-design/frontend && pnpm exec vue-tsc --noEmit` -> PASS
+- `cd /Users/xa/Desktop/简历/resume-design/frontend && pnpm exec eslint src/views/createTemplate/designer/utils/ensureTemplateContent.ts src/views/resumeContent/index.vue src/views/designerResume/index.vue src/views/designerResume/components/ResumeCard.vue` -> PASS
+
+2. Browser flow check - template detail
+- URL: `/resumedetail/6746fe472f0052cb6a9365aa`
+- Snapshot: `/Users/xa/Desktop/简历/resume-design/.playwright-cli/page-2026-02-23T07-43-01-195Z.yml`
+- Evidence: heading/module text exists (`求职意向`, `技能特长`, etc.)
+- Status: PASS
+
+3. Browser flow check - design editor
+- URL: `/designResume/6746fe472f0052cb6a9365aa`
+- Snapshot: `/Users/xa/Desktop/简历/resume-design/.playwright-cli/page-2026-02-23T07-43-47-599Z.yml`
+- Evidence: module sections and config entries rendered (`基本资料`, `求职意向`, `教育背景`, `技能特长`)
+- Status: PASS
+
+### Conclusion
+- Template now auto-recovers from empty backend payload and loads usable default content in both detail and editor pages.
+
+## 18) Template Cover Preview Correctness
+Date: `2026-02-23`
+
+### Scope
+1. Verify cover image data is not a single placeholder.
+2. Verify template content and cover are recovered from full seed source.
+
+### Pre-fix Evidence
+1. DB check:
+- `count(distinct preview_img) = 1`
+- all rows used `/static/img/normal.webp`
+- Status: FAIL
+
+### Post-fix Verification
+1. Backend compile
+- Command: `python3 -m py_compile backend/main.py`
+- Result: PASS
+
+2. Cover diversity check
+- Command: `sqlite3 backend/resume.db "select count(*),count(distinct preview_img) from templates;"`
+- Result: `108|108`
+- Status: PASS
+
+3. Data integrity check
+- Sample rows now include real `preview_img` URL + non-empty `componentsTree` in `json_data`.
+- Status: PASS
+
+4. Assertion script
+- Conditions:
+  - `cover_kinds > 1`
+  - sample `componentsTree length > 0`
+- Result: PASS
+
+### Conclusion
+- Template card cover preview mismatch fixed at backend data source layer.
+- Existing placeholder data is automatically backfilled on startup.
+
+## 19) Import Existing Resume Data
+Date: `2026-02-23`
+
+### Scope
+1. Verify import list API returns data required by import action.
+2. Verify compatibility fields for frontend filter logic.
+
+### RED Reproduction
+1. Before fix:
+- `getMyResumeList` row did not contain `template_json`.
+- Import action pre-check failed.
+- Status: FAIL
+
+### Post-fix Verification
+1. Backend compile
+- `python3 -m py_compile backend/models/user_resume.py backend/routers/create_template.py` -> PASS
+
+2. Frontend static checks
+- `cd /Users/xa/Desktop/简历/resume-design/frontend && pnpm exec vue-tsc --noEmit` -> PASS
+- `cd /Users/xa/Desktop/简历/resume-design/frontend && pnpm exec eslint src/views/designerResume/components/ImportOtherResumeDataDialog.vue` -> PASS
+
+3. API assertion
+- AutoLogin + `getMyResumeList` script validates:
+  - first list item has `template_json` object
+  - `template_json.componentsTree` length > 0
+- Result: PASS
+
+### Conclusion
+- Existing resume import path has required backend payload and frontend compatibility handling.

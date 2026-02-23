@@ -17,6 +17,32 @@ def _page_info(page: int, limit: int, total: int) -> dict:
     }
 
 
+def _template_category_payload(db: Session) -> list[dict]:
+    categories = db.query(TemplateCategory).order_by(TemplateCategory.sort_order).all()
+    if categories:
+        return [c.to_dict() for c in categories]
+
+    rows = (
+        db.query(Template.category)
+        .filter(Template.category.is_not(None), Template.category != "")
+        .distinct()
+        .all()
+    )
+    fallback: list[dict] = []
+    for index, (name,) in enumerate(rows):
+        fallback.append({
+            "_id": f"fallback-{index}",
+            "name": name,
+            "label": name,
+            "value": name,
+            "category_label": name,
+            "category_value": name,
+            "sortOrder": index,
+            "createdAt": "",
+        })
+    return fallback
+
+
 @router.get("/getTemplateList")
 def get_template_list(
     page: int = 1,
@@ -80,14 +106,12 @@ def get_template_by_id(template_id: str, db: Session = Depends(get_db)):
 
 @router.get("/getTemplateCategoryList")
 def get_template_category_list(db: Session = Depends(get_db)):
-    categories = db.query(TemplateCategory).order_by(TemplateCategory.sort_order).all()
-    return api_response(data=[c.to_dict() for c in categories])
+    return api_response(data=_template_category_payload(db))
 
 
 @router.get("/getCategoryList")
 def get_category_list(db: Session = Depends(get_db)):
-    categories = db.query(TemplateCategory).order_by(TemplateCategory.sort_order).all()
-    return api_response(data=[c.to_dict() for c in categories])
+    return api_response(data=_template_category_payload(db))
 
 
 @router.get("/getLegoCategoryList")

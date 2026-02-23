@@ -59,6 +59,7 @@
   import ProcessBarDialog from '@/components/ProcessBarDialog/ProcessBarDialog.vue';
   import { useHead } from '@vueuse/head';
   import GlobalThemeSettingBar from '../createTemplate/designer/components/GlobalThemeSettingBar.vue';
+  import { ensureTemplateContent } from '@/views/createTemplate/designer/utils/ensureTemplateContent';
   import { title } from '@/config/seo';
   import NoDataVue from '@/components/NoData/NoData.vue';
   import PreviewResumeDialog from './components/PreviewResumeDialog.vue';
@@ -90,9 +91,11 @@
   const getTemplateData = async () => {
     const data = await getTemplateByIdAsync(route.params.id);
     const payload = data?.data;
-    const templateJson = payload?.template_json;
-    if (data?.status === 200 && templateJson && typeof templateJson === 'object') {
-      HJNewJsonStore.value = templateJson;
+    if (data?.status === 200 && payload && typeof payload === 'object') {
+      HJNewJsonStore.value = ensureTemplateContent(payload?.template_json, {
+        templateId: String(route.params.id || ''),
+        title: payload.template_title || payload.title || title
+      });
       HJNewJsonStore.value.props = HJNewJsonStore.value.props || {};
       HJNewJsonStore.value.props.title = payload.template_title || payload.title || title;
       ElMessage.success('初始化成功');
@@ -117,9 +120,11 @@
     const data = await getUsertemplateAsync(route.params.id);
     const status = data?.data?.status ?? data?.status;
     const payload = data?.data?.data || data?.data;
-    const templateJson = payload?.template_json;
-    if (status === 200 && templateJson && typeof templateJson === 'object') {
-      HJNewJsonStore.value = templateJson;
+    if (status === 200 && payload && typeof payload === 'object') {
+      HJNewJsonStore.value = ensureTemplateContent(payload?.template_json, {
+        templateId: String(route.params.id || ''),
+        title: payload.template_title || payload.name || title
+      });
       HJNewJsonStore.value.props = HJNewJsonStore.value.props || {};
       HJNewJsonStore.value.props.title =
         HJNewJsonStore.value.config?.title || payload.template_title || payload.name || title;

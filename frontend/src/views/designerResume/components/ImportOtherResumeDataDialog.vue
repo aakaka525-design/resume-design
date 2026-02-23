@@ -91,22 +91,29 @@
         limit: limit.value
       };
       const data = await getMyResumeListAsync(params);
-      if (data.data.status === 200) {
-        legoCreateList.value = data.data.data.list
-          .filter((item: any) => resumeId.value !== item.template_id)
+      const status = data?.data?.status ?? data?.status;
+      const payload = data?.data?.data || data?.data;
+      if (status === 200) {
+        const list = Array.isArray(payload?.list) ? payload.list : [];
+        legoCreateList.value = list
+          .filter((item: any) => {
+            const templateId = item?.template_id || item?.templateId || '';
+            const itemId = item?.id || item?._id || '';
+            return resumeId.value !== templateId && resumeId.value !== itemId;
+          })
           .map((item: any) => ({
             ...item,
-            previewUrl: item.template_cover
+            previewUrl: item?.template_cover || item?.previewImg || item?.previewUrl || ''
           }));
-        total.value = data.data.data.page.count;
-        currentPage.value = data.data.data.page.currentPage;
+        total.value = payload?.page?.count || 0;
+        currentPage.value = payload?.page?.currentPage || 1;
 
         // 添加空数据提示
         if (legoCreateList.value.length === 0) {
           ElMessage.info('没有找到可导入的简历数据');
         }
       } else {
-        ElMessage.error(data.data.message);
+        ElMessage.error(data?.data?.message || data?.message || '获取简历列表失败');
       }
     } catch (error) {
       console.error('获取简历列表失败:', error);

@@ -95,6 +95,7 @@
   import ResumePreview from './components/ResumePreview.vue';
   import { storeToRefs } from 'pinia';
   import { openGlobalLoading } from '@/utils/common';
+  import { ensureTemplateContent } from '@/views/createTemplate/designer/utils/ensureTemplateContent';
   import { useHead } from '@vueuse/head';
   import { title } from '@/config/seo';
 
@@ -114,7 +115,12 @@
         templateUse: templateData.value.template_use, // 用途
         templateIndustry: templateData.value.template_industry // 行业
       };
-      HJNewJsonStore.value = data.data.template_json;
+      const templateJson = ensureTemplateContent(data.data.template_json, {
+        templateId: String(route.params.id || ''),
+        title: data.data.template_title || data.data.title || title
+      });
+      templateData.value.template_json = templateJson;
+      HJNewJsonStore.value = templateJson;
       HJNewJsonStore.value.props.title = data.data.template_title;
       useHead({
         title: '猫步简历 - ' + (templateData.value.template_title || title)
