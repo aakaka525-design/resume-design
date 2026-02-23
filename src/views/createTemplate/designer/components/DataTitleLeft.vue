@@ -24,27 +24,11 @@
         @click="toggleEdit"
       ></svg-icon>
     </el-tooltip>
-    <!-- AI翻译 -->
-    <el-tooltip effect="light" content="AI翻译" placement="bottom">
-      <div class="ai-icon-box" @click="languageSelect">
-        <img src="@/assets/images/ai-translate.webp" width="20" height="20" />
-      </div>
-    </el-tooltip>
   </div>
-
-  <!-- 语种切换弹窗 -->
-  <translate-dialog
-    :id="id"
-    :dialog-translate-visible="dialogTranslateVisible"
-    @cancle="translateCancle"
-  ></translate-dialog>
 </template>
 <script setup lang="ts">
   import { useGetSelectedModule } from '../hooks/useGetSelectedModule';
   import IconSelectPop from '@/components/IconSelectPop/IconSelectPop.vue';
-  import TranslateDialog from './TranslateDialog.vue';
-  import LoginDialog from '@/components/LoginDialog/LoginDialog';
-  import appStore from '@/store';
 
   const props = defineProps<{
     id: string;
@@ -68,26 +52,6 @@
     titleIpf.value.focus();
   };
 
-  // 打开智能语种切换弹窗
-  const dialogTranslateVisible = ref<boolean>(false);
-  const languageSelect = () => {
-    const { token } = appStore.useTokenStore;
-    if (!token) {
-      openLoginDialog();
-      return;
-    }
-    dialogTranslateVisible.value = true;
-  };
-
-  // 打开登录弹窗
-  const openLoginDialog = () => {
-    LoginDialog(true);
-  };
-
-  // 关闭翻译弹窗
-  const translateCancle = () => {
-    dialogTranslateVisible.value = false;
-  };
 </script>
 <style lang="scss" scoped>
   .title-left {
@@ -113,11 +77,6 @@
         background-color: #eee;
         border-radius: 4px;
       }
-    }
-    .ai-icon-box {
-      display: flex;
-      align-items: center;
-      margin-left: 6px;
     }
   }
 </style>

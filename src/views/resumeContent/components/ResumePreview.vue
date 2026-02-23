@@ -1,7 +1,7 @@
 <template>
   <div class="page-wrapper">
     <!-- 动态渲染的组件，添加ref -->
-    <component :is="pageComponents[HJNewJsonStore.props.pageName]" :preview="true"></component>
+    <component :is="currentPageComponent" :preview="true"></component>
   </div>
 </template>
 <script setup lang="ts">
@@ -11,6 +11,11 @@
 
   // 初始化JSON数据
   const { HJNewJsonStore } = storeToRefs(appStore.useCreateTemplateStore);
+
+  const currentPageComponent = computed(() => {
+    const pageName = HJNewJsonStore.value?.props?.pageName;
+    return pageComponents[pageName] || pageComponents.BasePage;
+  });
 </script>
 <style lang="scss" scoped>
   .page-wrapper {

@@ -1,4 +1,4 @@
-let IMPORT_JSON = {
+const IMPORT_JSON = {
   ID: 'e1046007-ef74-4e9e-bec8-5245911ec407',
   NAME: 'custom',
   TITLE: '模板标题',

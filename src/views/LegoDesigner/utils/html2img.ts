@@ -11,6 +11,7 @@ const getImgBase64URL = (el: any): Promise<string> => {
   return new Promise((resolve, reject) => {
     html2canvas(el, {
       useCORS: true,
+      logging: false,
       scale: 0.6
     })
       .then((canvas) => {

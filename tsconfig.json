@@ -27,18 +27,10 @@
       "vue3-pdfjs/esm",
       "vue3-print-nb",
       "v-contextmenu",
-      "vue-json-viewer",
-      "@vueuse/head"
+      "vue-json-viewer"
     ]
   },
-  "include": [
-    "src/env.d.ts",
-    "src/**/*.ts",
-    "src/**/*.d.ts",
-    "src/**/*.tsx",
-    "src/**/*.vue",
-    "types/**/*.d.ts"
-  ],
+  "include": ["src/**/*.ts", "src/**/*.d.ts", "src/**/*.tsx", "src/**/*.vue", "types/**/*.d.ts"],
   "references": [
     {
       "path": "./tsconfig.node.json"

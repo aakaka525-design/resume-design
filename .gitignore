@@ -11,6 +11,8 @@ dist.zip
 node_modules
 dist
 dist-ssr
+.playwright-cli
+output
 certs/fullchain.crt
 certs/private.pem
 certs/maobucv.crt

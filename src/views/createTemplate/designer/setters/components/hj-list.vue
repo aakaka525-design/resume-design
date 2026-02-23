@@ -34,7 +34,7 @@
             <!-- 模块数据填写区域 -->
             <div class="module-list-content-box">
               <!-- 数据填写组件 -->
-              <template v-for="(value, key, dataIndex) in element" :key="dataIndex">
+              <template v-for="(value, key) in element" :key="String(key)">
                 <!-- 列表组件 -->
                 <template v-if="value.type === 'listLi'">
                   <div :style="getFiledStyle(value)">

@@ -1,176 +1,136 @@
 <template>
-  <div ref="indexRef" class="index-box" @scroll="handleScroll">
-    <!-- 导航栏 -->
-    <nav-bar :bg-color="navColor" :font-color="fontColor" :icon-color="iconColor"></nav-bar>
-    <!-- 项目介绍栏 -->
-    <div ref="introduceRef">
-      <project-introduce
-        @free-make="freeMake"
-        @see-more="seeMore"
-        @lego-design="legoDesign"
-        @webcode="webcode"
-      ></project-introduce>
-    </div>
-    <!-- 更多功能 -->
-    <more-function v-if="!websiteConfig.all_free"></more-function>
-    <!-- 模板选择 -->
-    <template-select ref="templeTef"></template-select>
-    <!-- 根据用途挑选简历 -->
-    <select-template-by-use></select-template-by-use>
-    <!-- 职行AI产品介绍栏 -->
-    <jobzx-product ref="jobzxRef" v-config:open_jobzx></jobzx-product>
-    <!-- 简历优化服务 -->
-    <resume-service v-if="!websiteConfig.all_free"></resume-service>
-    <!-- 简历功能介绍 -->
-    <resume-function-introduce></resume-function-introduce>
-    <!-- 网站开源信息 -->
-    <website-open-source></website-open-source>
+  <div class="index-box">
+    <section class="hero">
+      <h1>本地简历编辑器</h1>
+      <p>仅保留个人项目所需的最小功能：简历编辑、积木编辑与本地导出。</p>
+      <div class="actions">
+        <el-button type="primary" size="large" @click="toResume">开始编辑简历</el-button>
+        <el-button size="large" @click="toLego">进入积木编辑</el-button>
+      </div>
+    </section>
 
-    <!-- 积木创作 -->
-    <!-- <lego-design-introduce-vue ref="legoDesignRef"></lego-design-introduce-vue> -->
-    <!-- 自定义模板 -->
-    <!-- <custom-template-vue ref="customTempleRef"></custom-template-vue> -->
-    <!-- 成为赞助者 -->
-    <!-- <sponsor-com-vue ref="sponsorRefs"></sponsor-com-vue> -->
-    <!-- 网站相关数据 -->
-    <web-data></web-data>
+    <section class="section">
+      <h2>核心入口</h2>
+      <div class="cards">
+        <div class="card" @click="toResume">
+          <h3>简历模板</h3>
+          <p>选择模板并进入 `designResume` 编辑链路。</p>
+        </div>
+        <div class="card" @click="toLegoTemplates">
+          <h3>积木模板</h3>
+          <p>选择模板或空白页面，进入 `legoDesigner` 编辑链路。</p>
+        </div>
+      </div>
+    </section>
 
-    <!-- 回到顶部 -->
-    <el-backtop :right="50" :bottom="80" />
-
-    <!-- 联系我 -->
-    <!-- <call-me></call-me> -->
-
-    <!-- GitHub卡片 -->
-    <!-- <github-card></github-card> -->
+    <footer-com />
   </div>
-  <!-- footer -->
-  <footer-com></footer-com>
-  <!-- 公告弹窗 -->
-  <notice-dialog
-    :dialog-notice-visible="dialogNoticeVisible"
-    @cancle="noticeCancle"
-  ></notice-dialog>
-  <!-- 签到弹窗 -->
-  <attendance-dialog
-    :dialog-attendance-visible="dialogAttendanceVisible"
-    @close="closeAttendanceDialog"
-  ></attendance-dialog>
-
-  <!-- 客服组件 -->
-  <customer-service></customer-service>
 </template>
-<script setup lang="ts">
-  import NavBar from '@/components/NavBar/NavBar.vue';
-  import ProjectIntroduce from './components/IndexProduct.vue';
-  import TemplateSelect from './components/TemplateSelect.vue';
-  import JobzxProduct from './components/JobzxProduct.vue';
-  // import CustomTemplateVue from './components/CustomTemplate.vue';
-  // import SponsorComVue from './components/SponsorCom.vue';
-  import FooterCom from '@/components/FooterCom/FooterCom.vue';
-  // import LegoDesignIntroduceVue from './components/LegoDesignIntroduce.vue';
-  // import CallMe from './components/CallMe.vue';
-  import { onBeforeUnmount, onMounted, ref } from 'vue';
-  import { throttle } from 'lodash';
-  // import GithubCard from '@/components/GihubCard/GithubCard.vue';
-  import WebData from './components/WebData.vue';
-  import NoticeDialog from '@/components/NoticeDialog/NoticeDialog.vue';
-  import SelectTemplateByUse from './components/SelectTemplateByUse.vue';
-  import ResumeFunctionIntroduce from './components/ResumeFunctionIntroduce.vue';
-  import WebsiteOpenSource from './components/WebsiteOpenSource.vue';
-  import ResumeService from './components/ResumeService.vue';
-  import { useHead } from '@vueuse/head';
-  import { storeToRefs } from 'pinia';
-  import appStore from '@/store';
-  import { title } from '@/config/seo';
-  import MoreFunction from './components/MoreFunction.vue';
 
-  const { websiteConfig } = storeToRefs(appStore.useWebsiteConfigStore);
+<script setup lang="ts">
+  import FooterCom from '@/components/FooterCom/FooterCom.vue';
+  import { useHead } from '@vueuse/head';
+
+  const router = useRouter();
 
   useHead({
-    title: websiteConfig.value.website_title || title
+    title: '猫步简历 - 本地简历编辑器',
+    meta: [
+      {
+        name: 'description',
+        content: '本地个人简历编辑器，支持简历编辑与积木编辑最小链路。'
+      }
+    ]
   });
 
-  const dialogNoticeVisible = ref<boolean>(false);
-  const readNotice = localStorage.getItem('readNotice');
-  if (readNotice == '1') {
-    dialogNoticeVisible.value = false;
-  } else {
-    dialogNoticeVisible.value = false;
-  }
-
-  const noticeCancle = () => {
-    dialogNoticeVisible.value = false;
-  };
-
-  // 监听元素滚动
-  onMounted(() => {
-    window.addEventListener('scroll', throttleHandle);
-  });
-  onBeforeUnmount(() => {
-    window.removeEventListener('scroll', throttleHandle);
-  });
-
-  // 页面滚动改变导航栏样式
-  const throttleHandle = throttle(() => {
-    handleScroll();
-  }, 300);
-  const navColor = ref<string>('');
-  const fontColor = ref<string>('green');
-  const iconColor = ref<string>('green');
-  const handleScroll = () => {
-    if (document.documentElement.scrollTop > 0) {
-      navColor.value = 'rgba(255, 255, 255, 1)';
-      fontColor.value = 'green';
-      iconColor.value = 'green';
-    } else {
-      navColor.value = '';
-      iconColor.value = 'green';
-      fontColor.value = 'green';
-    }
-  };
-
-  // 点击免费制作
-  const freeMake = () => {
+  const toResume = () => {
     router.push('/resume');
   };
 
-  // 下滑
-  const templeTef = ref<any>(null);
-  const seeMore = () => {
-    templeTef.value.scrollIntoView();
+  const toLego = () => {
+    router.push('/legoDesigner');
   };
 
-  // 点击积木创作
-  const legoDesignRef = ref<any>(null);
-  const legoDesign = () => {
-    legoDesignRef.value.scrollIntoView();
-  };
-
-  // 点击成为赞助者
-  const router = useRouter();
-  const webcode = () => {
-    router.push('/webcode');
-  };
-
-  // 签到弹窗
-  const dialogAttendanceVisible = ref<boolean>(false);
-  const { token } = appStore.useTokenStore;
-
-  // 每日弹窗控制
-  const lastPopupDate = localStorage.getItem('lastPopupDate');
-  const currentDate = new Date().toLocaleDateString();
-  if (lastPopupDate !== currentDate && token) {
-    dialogAttendanceVisible.value = true;
-    localStorage.setItem('lastPopupDate', currentDate);
-  }
-  const closeAttendanceDialog = () => {
-    dialogAttendanceVisible.value = false;
+  const toLegoTemplates = () => {
+    router.push('/legoTemplateList');
   };
 </script>
-<style lang="scss" scoped>
+
+<style scoped lang="scss">
   .index-box {
-    position: relative;
-    z-index: 0;
+    min-height: calc(100vh - 64px);
+    background: linear-gradient(180deg, #f5f9f5 0%, #fff 45%);
+
+    .hero {
+      max-width: 1080px;
+      margin: 0 auto;
+      padding: 72px 24px 36px;
+
+      h1 {
+        margin: 0;
+        font-size: 42px;
+        color: #1f2937;
+      }
+
+      p {
+        margin: 14px 0 28px;
+        color: #4b5563;
+        font-size: 16px;
+      }
+
+      .actions {
+        display: flex;
+        gap: 12px;
+      }
+    }
+
+    .section {
+      max-width: 1080px;
+      margin: 0 auto;
+      padding: 24px;
+
+      h2 {
+        margin-bottom: 16px;
+      }
+
+      .cards {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 16px;
+      }
+
+      .card {
+        cursor: pointer;
+        background: #fff;
+        border: 1px solid #e5e7eb;
+        border-radius: 12px;
+        padding: 20px;
+        transition: all 0.2s ease;
+
+        &:hover {
+          border-color: #74a274;
+          transform: translateY(-2px);
+        }
+
+        h3 {
+          margin: 0 0 8px;
+        }
+
+        p {
+          margin: 0;
+          color: #6b7280;
+        }
+      }
+    }
+  }
+
+  @media (max-width: 768px) {
+    .index-box .section .cards {
+      grid-template-columns: 1fr;
+    }
+
+    .index-box .hero h1 {
+      font-size: 34px;
+    }
   }
 </style>

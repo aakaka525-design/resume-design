@@ -4,8 +4,6 @@
       <div class="label-left">
         <span class="label">{{ label }}</span>
         <slot name="label-left"></slot>
-        <!-- AI操作 -->
-        <ai-button v-model="inputValue" :module-id="moduleId"></ai-button>
       </div>
       <div class="label-right">
         <slot name="component-switch"></slot>
@@ -17,8 +15,6 @@
 </template>
 
 <script lang="ts" setup>
-  import AiButton from '../../components/AiButton.vue';
-
   const emit = defineEmits(['update:modelValue']);
 
   interface TP {

@@ -23,7 +23,8 @@
     console.log('import.meta.env.', import.meta.env);
 
     selectedModuleId.value = ''; // 重置选中模块
-    const pageName = templates.find((template: any) => template.id === item._id).page;
+    const matchedTemplate = templates.find((template: any) => template.id === item._id);
+    const pageName = matchedTemplate?.page;
     console.log('pageName', pageName);
 
     if (import.meta.env.MODE === 'development') {

@@ -199,10 +199,8 @@
     background: #fff;
     border-radius: 8px;
     box-shadow: 0 1px 8px 0 rgba(0, 0, 0, 0.08);
-    position: -webkit-sticky;
-    position: sticky;
-    top: 65px;
-    z-index: 10;
+    position: relative;
+    z-index: 1;
     background-image: linear-gradient(120deg, #fdfbfb 0%, #ebedee 100%);
     border-radius: 5px;
     padding: 10px;

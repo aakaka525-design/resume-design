@@ -21,7 +21,7 @@
         :color="gradientColor"
       />
       <p v-if="percentageNum === 100" class="download-tip"
-        >如果下载未开始，请联系客服：LHQfighting</p
+        >如果文件未自动下载，请检查浏览器下载拦截设置</p
       >
     </div>
     <template #footer>
@@ -45,6 +45,17 @@
     percentageNum: 1
   });
 
+  const statusText = ref<string>('下载中');
+
+  watch(
+    () => props.dialogVisible,
+    (visible) => {
+      if (visible) {
+        statusText.value = '下载中';
+      }
+    }
+  );
+
   watch(
     () => props.percentageNum,
     (newVal) => {
@@ -52,12 +63,8 @@
         statusText.value = '下载完成';
       }
     },
-    {
-      deep: true
-    }
+    { deep: true }
   );
-
-  const statusText = ref<string>('下载中');
 
   // 计算颜色渐变
   const gradientColor = computed(() => {

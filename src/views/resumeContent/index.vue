@@ -1,6 +1,5 @@
 <template>
-  <resume-detail-nav-bar v-if="isPrerender"></resume-detail-nav-bar>
-  <nav-bar v-else bg-color="#fff" font-color="green" position="sticky" icon-color="green"></nav-bar>
+  <nav-bar bg-color="#fff" font-color="green" position="sticky" icon-color="green"></nav-bar>
   <div class="resume-content-box" :data-template-id="templateData?._id || ''">
     <div v-loading="!templateData" class="left-resume-preview">
       <resume-preview v-if="templateData" :show-line="true"></resume-preview>
@@ -46,26 +45,12 @@
             >
               使用此模版
             </el-button>
-            <!-- AI智能生成 -->
-            <el-button
-              class="use-template-btn ai-generate-btn"
-              data-action="aiGenerate"
-              type="primary"
-              size="large"
-              @click="toAiGenerateResume"
-            >
-              AI智能生成
-            </el-button>
           </div>
           <!-- 特别说明 -->
           <div class="template-tips">
             <p class="tips">特此说明：</p>
             <p class="tips-content">
-              目前在线编辑仅支持PDF格式的简历下载，需要word文档的用户请移步
-              <span data-action="goWordTemplate" style="cursor: pointer" @click="toWordTemplate">
-                模版商城
-              </span>
-              进行下载。
+              当前版本专注本地编辑与导出，支持在编辑器中直接导出 PDF / PNG。
             </p>
           </div>
         </div>
@@ -112,25 +97,10 @@
   import { openGlobalLoading } from '@/utils/common';
   import { useHead } from '@vueuse/head';
   import { title } from '@/config/seo';
-  import ResumeDetailNavBar from '@/components/NavBar/ResumeDetailNavBar.vue';
 
   const { resetResumeJson } = appStore.useCreateTemplateStore;
   const { HJNewJsonStore, selectedModuleId } = storeToRefs(appStore.useCreateTemplateStore);
   const route = useRoute();
-
-  // 是否预渲染
-  const isPrerender = computed(() => {
-    if (import.meta.env.MODE === 'development') {
-      return false;
-    } else {
-      const mode = ref(import.meta.env.VITE_BUILD_MODE || 'spa');
-      if (mode.value === 'spa') {
-        return false;
-      } else {
-        return true;
-      }
-    }
-  });
 
   // 查询模版数据
   const templateData = ref<any>(null); // 模板数据
@@ -171,23 +141,6 @@
     selectedModuleId.value = ''; // 重置选中模块
     router.push({
       path: `/designResume/${templateData.value._id}`
-    });
-  };
-
-  // 跳转至模版商城
-  const toWordTemplate = () => {
-    router.push({
-      path: '/word'
-    });
-  };
-
-  // AI智能生成简历
-  const toAiGenerateResume = () => {
-    router.push({
-      path: '/generateAiResume',
-      query: {
-        templateId: templateData.value._id
-      }
     });
   };
 
@@ -328,7 +281,7 @@
         }
         .use-template-box {
           display: flex;
-          justify-content: space-between;
+          justify-content: flex-start;
           .use-template-btn {
             height: 50px;
             width: 100%;
@@ -338,25 +291,6 @@
             display: flex;
             align-items: center;
             padding: 0;
-          }
-          .ai-generate-btn {
-            background: linear-gradient(
-              138deg,
-              #3b2af9,
-              #562cf7 22%,
-              #dd34ee 89%,
-              #f5e17d
-            ) !important;
-            color: #fff !important;
-            width: 100% !important;
-            letter-spacing: 2px !important;
-            border: none !important;
-            padding: 0 !important;
-            transition: all 0.3s ease !important;
-            border: none;
-            &:hover {
-              opacity: 0.8;
-            }
           }
         }
         .template-tips {

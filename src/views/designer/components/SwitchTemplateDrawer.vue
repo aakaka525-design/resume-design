@@ -46,7 +46,7 @@
   withDefaults(defineProps<IDrawer>(), {
     drawerSwitchVisible: false
   });
-  const direction = ref('ltr');
+  const direction = ref<'ltr' | 'rtl' | 'ttb' | 'btt'>('ltr');
 
   // 查询模板列表
   const page = 1;

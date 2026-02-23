@@ -5,6 +5,7 @@
       <component
         :is="pageComponents[HJNewJsonStore.props.pageName]"
         ref="dynamicComponentRef"
+        :preview="false"
       ></component>
       <!-- 分页线 -->
       <template v-if="lineNumber > 0">

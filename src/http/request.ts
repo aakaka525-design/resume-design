@@ -2,18 +2,11 @@ import Request from './index';
 import { AxiosResponse } from 'axios';
 import CONFIG from '@/config/index';
 import appStore from '@/store';
-import LoginDialog from '@/components/LoginDialog/LoginDialog';
 import { ElMessage } from 'element-plus';
 
 const handleUnauthorized = () => {
-  const { saveToken } = appStore.useTokenStore;
-  const { saveUserInfo } = appStore.useUserInfoStore;
-  const { setUuid } = appStore.useRefreshStore;
-
-  saveToken(''); // 清除token
-  saveUserInfo(''); // 清除用户信息
-  setUuid(); // 全局刷新
-  LoginDialog(true); // 显示登录对话框
+  // 个人模式：不弹登录框，仅打印警告（后端已不返回 401）
+  console.warn('收到 401 响应，后端可能未正常降级到默认用户');
 };
 
 const http: any = new Request({
@@ -44,7 +37,7 @@ const http: any = new Request({
       const status = error.response?.status;
       const errorMessages: Record<number, string> = {
         400: '请求错误(400)',
-        401: '请登录网站',
+        401: '请求未授权(401)',
         403: '拒绝访问(403)',
         404: '请求出错(404)',
         408: '请求超时(408)',

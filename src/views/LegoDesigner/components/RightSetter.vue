@@ -21,9 +21,8 @@
             name="cptProp"
           >
             <div
-              v-for="(value, key, index) in HJSchemaJsonStore.componentsTree[pageActiveIndex]
-                .children[widgetIndex].props"
-              :key="index"
+              v-for="(value, key) in HJSchemaJsonStore.componentsTree[pageActiveIndex].children[widgetIndex].props"
+              :key="String(key)"
             >
               <component
                 :is="getSetterCom(key)"
@@ -36,9 +35,8 @@
           <el-collapse-item title="样式属性" name="styleProp">
             <el-form label-width="80px" label-position="left">
               <div
-                v-for="(value, key, index) in HJSchemaJsonStore.componentsTree[pageActiveIndex]
-                  .children[widgetIndex].css"
-                :key="index"
+                v-for="(value, key) in HJSchemaJsonStore.componentsTree[pageActiveIndex].children[widgetIndex].css"
+                :key="String(key)"
               >
                 <component
                   :is="getSetterCom(key)"
@@ -66,9 +64,8 @@
                 "
               >
                 <div
-                  v-for="(value, key, index) in HJSchemaJsonStore.componentsTree[pageActiveIndex]
-                    .children[widgetIndex].dataSource"
-                  :key="index"
+                  v-for="(value, key) in HJSchemaJsonStore.componentsTree[pageActiveIndex].children[widgetIndex].dataSource"
+                  :key="String(key)"
                 >
                   <component
                     :is="getDataSetterCom(key)"

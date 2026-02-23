@@ -21,7 +21,7 @@
         name="styleProp"
       >
         <el-form label-width="100px" label-position="right">
-          <div v-for="(value, key, index) in HJNewJsonStore.css" :key="index">
+          <div v-for="(value, key) in HJNewJsonStore.css" :key="String(key)">
             <component :is="getStyleSetterCom(key)" :value="value"></component>
           </div>
         </el-form>
@@ -40,7 +40,7 @@
           <el-form-item v-if="route.query.type === 'create'" label="Prop">
             <el-input v-model="customItem.prop" disabled />
           </el-form-item>
-          <div v-for="(value, key, index) in customItem.css" :key="index">
+          <div v-for="(value, key) in customItem.css" :key="String(key)">
             <component
               :is="getStyleSetterCom(key)"
               :custom-css-prop="customItem.prop"

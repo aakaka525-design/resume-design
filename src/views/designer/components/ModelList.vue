@@ -54,7 +54,7 @@
   import draggable from 'vuedraggable';
 
   defineProps<{
-    leftShowStatus: Boolean;
+    leftShowStatus: boolean;
   }>();
 
   // 列表数据
@@ -74,12 +74,10 @@
   };
   //拖拽开始的事件
   const onStart = () => {
-    console.log('开始拖拽');
   };
 
   //拖拽结束的事件
   const onEnd = () => {
-    console.log('结束拖拽');
   };
 </script>
 <style lang="scss" scoped>

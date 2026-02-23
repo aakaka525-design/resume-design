@@ -122,7 +122,7 @@
           <!-- 模块数据填写区域 -->
           <template v-if="moduleItem">
             <div v-show="moduleItem.customProps.unfoldModule" class="module-content-box">
-              <template v-for="(value, key, dataIndex) in moduleItem.dataSource" :key="dataIndex">
+              <template v-for="(value, key) in moduleItem.dataSource" :key="String(key)">
                 <!-- 列表组件 -->
                 <template v-if="value.type === 'list'">
                   <div :style="getFiledStyle(value)">

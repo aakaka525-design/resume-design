@@ -6,6 +6,7 @@
   "scripts": {
     "deploy": "npm install && npm run build",
     "dev": "vite",
+    "build": "pnpm build:local",
     "build:local": "rimraf dist && vite build",
     "build:dev": "rimraf dist && vite build --mode development",
     "generate:prerender-data": "ts-node generate-prerender-data.ts",
@@ -49,6 +50,7 @@
     "image-conversion": "^2.1.1",
     "increase-memory-limit": "^1.0.7",
     "json-editor-vue3": "^1.1.1",
+    "jspdf": "^4.2.0",
     "lodash": "^4.17.21",
     "markdown-it": "^14.1.0",
     "moment": "^2.30.1",

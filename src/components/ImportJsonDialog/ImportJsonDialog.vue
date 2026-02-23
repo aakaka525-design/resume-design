@@ -103,8 +103,7 @@
     code.value = JSON.stringify(IMPORT_JSON, null, 4);
     ElMessage({
       message: '重置成功！',
-      type: 'success',
-      center: true
+      type: 'success'
     });
   };
 
@@ -116,8 +115,7 @@
     if (!code.value) {
       ElMessage({
         message: '数据不能为空！',
-        type: 'error',
-        center: true
+        type: 'error'
       });
       return;
     }
@@ -125,8 +123,7 @@
     if (!isCurrentJSON) {
       ElMessage({
         message: 'JSON格式不正确！',
-        type: 'error',
-        center: true
+        type: 'error'
       });
       return;
     }

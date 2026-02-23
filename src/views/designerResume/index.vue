@@ -4,7 +4,6 @@
     <nav-bar
       @reset="reset"
       @generate-report="generateReport"
-      @download-m-d="downloadMD"
       @preview-resume="handlePreviewResume"
     ></nav-bar>
     <!-- 底部区域 -->
@@ -38,13 +37,6 @@
       @cancle="cancleProgress"
     ></process-bar-dialog>
   </div>
-
-  <!-- AI JSON转md -->
-  <ai-json-to-md-drawer
-    :drawer="aiToMdDrawer"
-    @close-ai-optimize-drawer="closeAiDrawer"
-  ></ai-json-to-md-drawer>
-
   <!-- 预览弹窗 -->
   <preview-resume-dialog
     :dialog-preview-resume-visible="dialogPreviewResumeVisible"
@@ -69,7 +61,6 @@
   import GlobalThemeSettingBar from '../createTemplate/designer/components/GlobalThemeSettingBar.vue';
   import { title } from '@/config/seo';
   import NoDataVue from '@/components/NoData/NoData.vue';
-  import AiJsonToMdDrawer from './components/AiJsonToMdDrawer.vue';
   import PreviewResumeDialog from './components/PreviewResumeDialog.vue';
 
   const isLoading = ref(true);
@@ -89,7 +80,7 @@
       const paddingLeft = parseFloat(styles.paddingLeft || '0');
       const paddingRight = parseFloat(styles.paddingRight || '0');
 
-      const availableWidth = rightBox.clientWidth - paddingLeft - paddingRight - 90; // 可用宽度
+      const availableWidth = rightBox.clientWidth - paddingLeft - paddingRight - 24; // 可用宽度
       zoomScale.value = availableWidth / fixedWidth; // 计算缩放比例
       if (zoomScale.value > 1) zoomScale.value = 1; // 限制最大比例为 1
     }
@@ -98,9 +89,12 @@
   // 查询模版数据
   const getTemplateData = async () => {
     const data = await getTemplateByIdAsync(route.params.id);
-    if (data.status === 200) {
-      HJNewJsonStore.value = data.data.template_json;
-      HJNewJsonStore.value.props.title = data.data.template_title;
+    const payload = data?.data;
+    const templateJson = payload?.template_json;
+    if (data?.status === 200 && templateJson && typeof templateJson === 'object') {
+      HJNewJsonStore.value = templateJson;
+      HJNewJsonStore.value.props = HJNewJsonStore.value.props || {};
+      HJNewJsonStore.value.props.title = payload.template_title || payload.title || title;
       ElMessage.success('初始化成功');
       useHead({
         title: HJNewJsonStore.value.props.title || title
@@ -121,15 +115,20 @@
   // 查询用户数据
   const getUserTemplate = async () => {
     const data = await getUsertemplateAsync(route.params.id);
-    if (data.data.status === 200) {
-      HJNewJsonStore.value = data.data.data.template_json;
-      HJNewJsonStore.value.props.title = data.data.data.template_json.config.title;
+    const status = data?.data?.status ?? data?.status;
+    const payload = data?.data?.data || data?.data;
+    const templateJson = payload?.template_json;
+    if (status === 200 && templateJson && typeof templateJson === 'object') {
+      HJNewJsonStore.value = templateJson;
+      HJNewJsonStore.value.props = HJNewJsonStore.value.props || {};
+      HJNewJsonStore.value.props.title =
+        HJNewJsonStore.value.config?.title || payload.template_title || payload.name || title;
       useHead({
         title: HJNewJsonStore.value.props.title || title
       });
       isLoading.value = false;
     } else {
-      defaultTemplate();
+      getTemplateData();
     }
   };
 
@@ -142,8 +141,7 @@
 
   const { token } = appStore.useTokenStore;
   if (token) {
-    // 如果是从AI智能生成简历跳转过来，则不查询模版
-    console.log('fromAiGenerate', fromAiGenerate.value);
+    // 保留来源标记兼容：若来源于生成流程，则跳过模板读取。
     if (!fromAiGenerate.value) {
       // 查询用户简历
       getUserTemplate();
@@ -172,35 +170,35 @@
   let timer: any = null;
   const generateReport = async (type: string) => {
     dialogVisible.value = true;
+    percentage.value = 10;
     timer = setInterval(() => {
-      percentage.value += 5;
-      if (percentage.value > 95) {
-        percentage.value = 98;
+      if (percentage.value < 90) {
+        percentage.value += 8;
+      } else {
         clearInterval(timer);
       }
-    }, 500);
-    if (type === 'pdf') {
-      await exportPdfNew(route.params.id as string);
-    } else {
-      await exportPNGNew(route.params.id as string);
+    }, 180);
+
+    try {
+      if (type === 'pdf') {
+        await exportPdfNew(route.params.id as string);
+      } else {
+        await exportPNGNew(route.params.id as string);
+      }
+      percentage.value = 100;
+      setTimeout(() => {
+        cancleProgress();
+      }, 650);
+      // 查询用简币信息
+      const { getUserIntegralTotal } = appStore.useUserInfoStore;
+      getUserIntegralTotal();
+    } catch (error) {
+      console.error('导出失败', error);
+      ElMessage.error('导出失败，请重试');
+      cancleProgress();
+    } finally {
+      clearInterval(timer);
     }
-
-    clearInterval(timer);
-    percentage.value = 100;
-    // 查询用简币信息
-    const { getUserIntegralTotal } = appStore.useUserInfoStore;
-    getUserIntegralTotal();
-  };
-
-  // 导出为Markdown
-  const aiToMdDrawer = ref(false); // ai json to md drawer
-  const downloadMD = () => {
-    aiToMdDrawer.value = true;
-  };
-
-  // 关闭AI转md抽屉
-  const closeAiDrawer = () => {
-    aiToMdDrawer.value = false;
   };
 
   // 关闭进度弹窗
@@ -212,7 +210,6 @@
   // 打开预览弹窗
   const dialogPreviewResumeVisible = ref<boolean>(false);
   const handlePreviewResume = () => {
-    console.log('打开预览弹窗');
     dialogPreviewResumeVisible.value = true;
   };
 
@@ -296,11 +293,13 @@
         }
       }
       .page-eidtor-box {
-        width: 60px;
+        width: 64px;
+        flex: 0 0 64px;
         min-height: 300px;
-        position: absolute;
-        right: 15px;
-        top: 130px;
+        align-self: flex-start;
+        margin-top: 130px;
+        margin-right: 12px;
+        z-index: 2;
       }
     }
 

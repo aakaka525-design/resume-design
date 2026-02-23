@@ -15,7 +15,6 @@
     "vite.config.ts",
     "build/**/*.ts",
     "types/*.d.ts",
-    "src",
     "generate-prerender-data.ts" // 确保你 prerender 相关文件也被包含
   ]
 }

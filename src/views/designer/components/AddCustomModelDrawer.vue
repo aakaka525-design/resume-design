@@ -28,12 +28,10 @@
   withDefaults(defineProps<IDrawer>(), {
     drawerVisible: false
   });
-  const direction = ref('ltr');
+  const direction = ref<'ltr' | 'rtl' | 'ttb' | 'btt'>('ltr');
 
   // 关闭抽屉
   const closeAddDrawer = () => {
-    console.log('关闭回调');
-
     emit('closeAddDrawer');
   };
 </script>

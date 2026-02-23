@@ -639,7 +639,7 @@ function restoreContentData(contentData: any): any {
   return restoredContent;
 }
 
-// 恢复数据的ID以及将AI生成后的内容重新赋值到原JSON上去
+// 恢复数据的 ID，并把新内容回填到原 JSON 结构
 export const restoreDataId = (oldData: any, newData: any) => {
   oldData.componentsTree.forEach((item: any) => {
     const shortId = item.id.slice(-10); // 截取 id 的最后十位
@@ -687,12 +687,6 @@ function mergeData(oldData: any, newData: any) {
                 mergeData(oldData[key][i], newData[key][i]);
               }
             }
-            // // 如果是对象数组，递归合并每个元素
-            // for (let i = 0; i < oldData[key].length; i++) {
-            //   if (newData[key][i]) {
-            //     mergeData(oldData[key][i], newData[key][i]);
-            //   }
-            // }
           }
         }
       }

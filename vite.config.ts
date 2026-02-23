@@ -202,8 +202,10 @@ export default defineConfig(async ({ command, mode }: ConfigEnv): Promise<UserCo
 
               // 插入 native-events.js 脚本
               const sitemapInjectedScriptTag = '<script src="/static/native-events.js"></script>';
-              const sitemapModifiedHtml = sitemapHtml
-                .replace('</body>', `${sitemapInjectedScriptTag}</body>`);
+              const sitemapModifiedHtml = sitemapHtml.replace(
+                '</body>',
+                `${sitemapInjectedScriptTag}</body>`
+              );
 
               // 保存到dist根目录
               fs.writeFileSync(path.join(outputPath, 'sitemap.html'), sitemapModifiedHtml, {
@@ -289,42 +291,45 @@ export default defineConfig(async ({ command, mode }: ConfigEnv): Promise<UserCo
           }
         }
       },
-      // ✅ prerender 插件
-      prerender({
-        staticDir: path.resolve(__dirname, VITE_OUTPUT_DIR),
-        routes: ['/'],
-        postProcess: (context) => {
-          const dataPath = path.resolve(__dirname, '.temp/prerender-data.json');
+      ...(process.env.VITE_BUILD_MODE === 'ssr'
+        ? [
+            prerender({
+              staticDir: path.resolve(__dirname, VITE_OUTPUT_DIR),
+              routes: ['/'],
+              postProcess: (context) => {
+                const dataPath = path.resolve(__dirname, '.temp/prerender-data.json');
 
-          if (!context || !context.html) {
-            console.warn('⚠️ context.html 不存在，可能未正确渲染');
-            return context;
-          }
+                if (!context || !context.html) {
+                  console.warn('⚠️ context.html 不存在，可能未正确渲染');
+                  return context;
+                }
 
-          // 只对根路由 / 进行替换
-          if (context.route === '/') {
-            if (fs.existsSync(dataPath)) {
-              try {
-                const data = JSON.parse(fs.readFileSync(dataPath, 'utf-8'));
-                context.html = context.html.replace(
-                  '<div id="footer"></div>',
-                  `${data.FOOTER_HTML}`
-                );
-                return context;
-              } catch (err) {
-                console.error('❌ 解析 prerender-data.json 失败:', err);
+                // 只对根路由 / 进行替换
+                if (context.route === '/') {
+                  if (fs.existsSync(dataPath)) {
+                    try {
+                      const data = JSON.parse(fs.readFileSync(dataPath, 'utf-8'));
+                      context.html = context.html.replace(
+                        '<div id="footer"></div>',
+                        `${data.FOOTER_HTML}`
+                      );
+                      return context;
+                    } catch (err) {
+                      console.error('❌ 解析 prerender-data.json 失败:', err);
+                      return context;
+                    }
+                  } else {
+                    console.warn('⚠️ prerender-data.json 不存在于 .temp/，请检查是否成功生成');
+                    return context;
+                  }
+                }
+
+                // 非根路由，原样返回不做处理
                 return context;
               }
-            } else {
-              console.warn('⚠️ prerender-data.json 不存在于 .temp/，请检查是否成功生成');
-              return context;
-            }
-          }
-
-          // 非根路由，原样返回不做处理
-          return context;
-        }
-      })
+            })
+          ]
+        : [])
     ],
     esbuild: {
       logOverride: { 'this-is-undefined-in-esm': 'silent' }

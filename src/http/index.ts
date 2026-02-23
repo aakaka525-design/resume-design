@@ -2,6 +2,47 @@ import axios, { AxiosResponse, AxiosError, AxiosRequestConfig, AxiosInstance } f
 import type { RequestConfig, RequestInterceptors } from './types/types';
 import qs from 'qs';
 
+const isEnvelopeResponse = (
+  value: unknown
+): value is { status: number; data: any; message: string } => {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    Object.prototype.hasOwnProperty.call(value, 'status') &&
+    Object.prototype.hasOwnProperty.call(value, 'data') &&
+    Object.prototype.hasOwnProperty.call(value, 'message')
+  );
+};
+
+const normalizeEnvelope = (payload: any) => {
+  if (!isEnvelopeResponse(payload)) {
+    return payload;
+  }
+
+  const originData = payload.data;
+
+  // 兼容旧代码：允许 data.data.status / data.data.data 访问方式
+  if (Array.isArray(originData)) {
+    const arrData: any = originData;
+    arrData.status = payload.status;
+    arrData.message = payload.message;
+    arrData.data = originData.slice();
+    payload.data = arrData;
+    return payload;
+  }
+
+  if (originData && typeof originData === 'object') {
+    payload.data = {
+      ...(originData as Record<string, any>),
+      status: payload.status,
+      message: payload.message,
+      data: originData
+    };
+  }
+
+  return payload;
+};
+
 class Request {
   instance: AxiosInstance;
   interceptorsObj?: RequestInterceptors<AxiosResponse>;
@@ -13,7 +54,7 @@ class Request {
     this.interceptorsObj = config.interceptors;
 
     this.instance.interceptors.request.use(
-      (config: AxiosRequestConfig) => {
+      (config) => {
         // 在此处添加请求拦截逻辑
         return config;
       },
@@ -24,7 +65,10 @@ class Request {
 
     if (this.interceptorsObj) {
       this.instance.interceptors.request.use(
-        this.interceptorsObj.requestInterceptors,
+        (config) =>
+          this.interceptorsObj?.requestInterceptors
+            ? (this.interceptorsObj.requestInterceptors(config as AxiosRequestConfig) as any)
+            : config,
         this.interceptorsObj.requestInterceptorsCatch
       );
       this.instance.interceptors.response.use(
@@ -34,7 +78,7 @@ class Request {
     }
 
     this.instance.interceptors.response.use(
-      (response: AxiosResponse) => response.data,
+      (response: AxiosResponse) => normalizeEnvelope(response.data),
       (error: AxiosError) => {
         return Promise.reject(error);
       }

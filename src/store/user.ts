@@ -1,14 +1,12 @@
 import { getUserIntegralTotalAsync } from '@/http/api/integral';
 import { getUserInfoAsync } from '@/http/api/user';
 import { defineStore } from 'pinia';
-import appStore from './index';
 
-// 用户信息
 export const useUserInfoStore = defineStore('userInfoStore', () => {
   const userInfo = ref<any>(
     localStorage.getItem('userInfo') ? JSON.parse(localStorage.getItem('userInfo') as string) : ''
   );
-  // 用户简币
+
   const userIntegralInfo = ref<any>(0);
 
   function saveUserInfo(userInfoObj: any) {
@@ -20,15 +18,11 @@ export const useUserInfoStore = defineStore('userInfoStore', () => {
     userIntegralInfo.value = integalInfo;
   }
 
-  // 查询用户信息
   async function getAndUpdateUserInfo() {
     const email = userInfo.value ? userInfo.value.email : '';
     const data = await getUserInfoAsync(email);
     if (data.data.status === 200) {
       saveUserInfo(data.data.data);
-      // 查保存用户会员信息
-      const { saveMembershipInfo } = appStore.useMembershipStore;
-      saveMembershipInfo(data.data.data.membershipInfo);
     } else {
       ElMessage({
         message: data.message,
@@ -37,7 +31,6 @@ export const useUserInfoStore = defineStore('userInfoStore', () => {
     }
   }
 
-  // 查询用户当前用户简币信息
   async function getUserIntegralTotal() {
     const data = await getUserIntegralTotalAsync();
     if (data.data.status === 200) {
@@ -49,6 +42,7 @@ export const useUserInfoStore = defineStore('userInfoStore', () => {
       });
     }
   }
+
   return {
     userInfo,
     userIntegralInfo,

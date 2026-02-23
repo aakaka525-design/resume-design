@@ -31,8 +31,6 @@ import 'default-passive-events';
 
 import VueDOMPurifyHTML from 'vue-dompurify-html';
 
-import UndrawUi from './components/packages/index';
-
 import { userAgent } from '@/utils/userAgent';
 
 import '@/style/article/github-markdown-light.css';
@@ -72,7 +70,7 @@ app.use(VueDOMPurifyHTML, {
     ADD_TAGS: ['iframe']
   }
 });
-app.use(ColorPicker);
+app.use(ColorPicker as any);
 app.use(CScrollbar);
 app.use(configDirectives);
 app.use(VueViewer, {
@@ -82,7 +80,6 @@ app.use(VueViewer, {
 });
 app.use(contextmenu);
 app.component('SvgIcon', SvgIcon);
-app.use(UndrawUi);
 
 const head = createHead();
 app.use(head);
@@ -92,7 +89,7 @@ app.config.globalProperties.$loadIcons = loadIconfont;
 
 // 挂载实例，如果访问的是静态html，则不挂载
 
-const isTemplatePage = location.pathname.endsWith('.html')
+const isTemplatePage = location.pathname.endsWith('.html');
 
 if (!isTemplatePage) {
   app.mount('#app');

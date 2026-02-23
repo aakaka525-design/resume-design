@@ -6,7 +6,6 @@
       @generate-report="generateReport"
       @generate-report-new="generateReportNew"
       @reset="reset"
-      @publish-comment="publishComment"
     ></design-nav>
     <!-- 内容区域 -->
     <div class="bottom">
@@ -40,15 +39,6 @@
           </template>
         </component>
 
-        <!-- 评论组件 -->
-        <div ref="commentRef">
-          <comment-com
-            v-config:open_comment
-            :comment-type-id="id"
-            comment-type="resumeOnline"
-            width="820px"
-          ></comment-com>
-        </div>
         <!-- 回到顶部 -->
         <el-backtop :right="365" :bottom="50" target="#print">
           <div
@@ -115,6 +105,8 @@
   import optionsComponents from '@/utils/registerMaterialOptionsCom';
   import IDESIGNJSON from '@/interface/design';
   import { closeGlobalLoading } from '@/utils/common';
+  import IMPORT_JSON from '@/schema/import';
+  import { cloneDeep } from 'lodash';
   import {
     getTemplateInfoAsync,
     getResetTemplateInfoAsync,
@@ -132,24 +124,64 @@
   const route = useRoute();
   const { id } = route.query; // 模板id和模板名称
 
+  const resolveTemplateId = (value: unknown): string => {
+    if (typeof value === 'string') return value;
+    if (Array.isArray(value) && typeof value[0] === 'string') return value[0];
+    return '';
+  };
+
+  const useLocalDefaultTemplate = (templateId = '') => {
+    const fallbackTemplate = cloneDeep(IMPORT_JSON) as IDESIGNJSON;
+    if (templateId) {
+      fallbackTemplate.ID = templateId;
+    }
+    changeResumeJsonData(fallbackTemplate);
+    setUuid();
+  };
+
+  const resolveTemplateJson = (data: any): IDESIGNJSON | null => {
+    const status = data?.data?.status ?? data?.status;
+    const payload = data?.data?.data ?? data?.data;
+    const templateJson =
+      payload?.template_json ?? payload?.templateJson ?? payload?.json ?? payload;
+    if (status !== 200 || !templateJson || typeof templateJson !== 'object') {
+      return null;
+    }
+    return templateJson as IDESIGNJSON;
+  };
+
   // 查询简历数据，有草稿返回草稿，没有草稿返回简历数据
   const resetStoreAndLocal = async (isReset = false, ID = id) => {
-    let TEMPLATE_JSON: IDESIGNJSON;
-    let data;
-    if (isReset) {
-      data = await getResetTemplateInfoAsync(ID); // 重置
-    } else {
-      data = await getTemplateInfoAsync(ID);
-    }
-    if (data.data.status === 200) {
-      TEMPLATE_JSON = data.data.data as IDESIGNJSON;
-    } else {
-      ElMessage.error('查询模板失败！');
+    const templateId = resolveTemplateId(ID);
+    if (!templateId) {
+      useLocalDefaultTemplate();
       return;
     }
-    changeResumeJsonData(TEMPLATE_JSON); // 更改store的数据
-    setUuid();
-    console.log('简历JSON数据', resumeJsonNewStore.value);
+
+    try {
+      const data = isReset
+        ? await getResetTemplateInfoAsync(templateId) // 重置
+        : await getTemplateInfoAsync(templateId);
+
+      const templateJson = resolveTemplateJson(data);
+      if (
+        !templateJson ||
+        !Array.isArray(templateJson.COMPONENTS) ||
+        !templateJson.COMPONENTS.length
+      ) {
+        ElMessage.warning('模板为空，已加载本地默认模板');
+        useLocalDefaultTemplate(templateId);
+        return;
+      }
+
+      changeResumeJsonData(templateJson); // 更改store的数据
+      setUuid();
+    } catch (error) {
+      console.error('查询模板失败', error);
+      ElMessage.warning('查询模板失败，已加载本地默认模板');
+      useLocalDefaultTemplate(templateId);
+      return;
+    }
   };
   resetStoreAndLocal();
   provide('resetStoreAndLocal', resetStoreAndLocal);
@@ -201,8 +233,7 @@
     globalStyleSetting(); // 重置选中模块
     ElMessage({
       message: '重置成功!',
-      type: 'success',
-      center: true
+      type: 'success'
     });
     setUuid(); // 重新渲染左侧列表和右侧属性面板设置
     await nextTick();
@@ -212,25 +243,36 @@
   // 生成pdf方法
   const dialogVisible = ref<boolean>(false);
   const percentage = ref<number>(10);
-  let timer: any = null;
   const generateReport = async (type: string) => {
     dialogVisible.value = true;
-    timer = setInterval(() => {
-      percentage.value += 5;
-      if (percentage.value > 95) {
-        percentage.value = 98;
-        clearInterval(timer);
-      }
-    }, 500);
-    let height = htmlContentPdf.value.style.height;
-    if (type === 'pdf') {
-      await exportPdf(id as string, height);
-    } else {
-      await exportPNG(id as string, height);
-    }
+    percentage.value = 10;
 
-    clearInterval(timer);
-    percentage.value = 100;
+    const progressTimer = setInterval(() => {
+      if (percentage.value < 90) {
+        percentage.value += 8;
+      } else {
+        clearInterval(progressTimer);
+      }
+    }, 180);
+
+    try {
+      if (type === 'pdf') {
+        await exportPdf();
+      } else {
+        await exportPNG();
+      }
+
+      percentage.value = 100;
+      setTimeout(() => {
+        cancleProgress();
+      }, 650);
+    } catch (e) {
+      console.error('导出失败', e);
+      ElMessage.error('导出失败，请重试');
+      cancleProgress();
+    } finally {
+      clearInterval(progressTimer);
+    }
   };
 
   // 另存为PDF，新的方法
@@ -352,19 +394,6 @@
   const reduceSize = (number: number) => {
     sizeCenter.value = number;
   };
-
-  // 滚动到发表评论区域
-  const commentRef = ref<any>(null);
-  const publishComment = () => {
-    commentRef.value.scrollIntoView({ behavior: 'smooth' });
-  };
-
-  // 页面销毁
-  onUnmounted(() => {
-    if (timer) {
-      clearInterval(timer);
-    } // 关闭全局等待层
-  });
 </script>
 <style lang="scss">
   @use '../../style/options';

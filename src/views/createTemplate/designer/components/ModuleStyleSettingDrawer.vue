@@ -17,7 +17,7 @@
       </div>
       <el-collapse-item title="组件整体样式" name="styleProp">
         <el-form label-width="100px" label-position="right">
-          <div v-for="(value, key, index) in module.css" :key="index">
+          <div v-for="(value, key) in module.css" :key="String(key)">
             <component
               :is="getStyleSetterCom(key)"
               :id="selectedModuleId"
@@ -40,7 +40,7 @@
           <el-form-item v-if="route.query.type === 'create'" label="Prop">
             <el-input v-model="customItem.prop" disabled />
           </el-form-item>
-          <div v-for="(value, key, index) in customItem.css" :key="index">
+          <div v-for="(value, key) in customItem.css" :key="String(key)">
             <component
               :is="getStyleSetterCom(key)"
               :id="selectedModuleId"

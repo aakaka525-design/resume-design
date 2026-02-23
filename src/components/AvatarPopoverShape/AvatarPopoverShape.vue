@@ -18,12 +18,7 @@
     </template>
     <!-- 内容区域 -->
     <div class="custom-avatar-shape-box">
-      <div
-        v-for="(val, key, index) in avatarComponents"
-        :key="index"
-        class="item-box"
-        @click="handleAvatarShape(key)"
-      >
+      <div v-for="(val, key) in avatarComponents" :key="String(key)" class="item-box" @click="handleAvatarShape(key)">
         <component
           :is="val"
           :width="avatarDic[key].miniWidth"

@@ -30,7 +30,7 @@
                   ></svg-icon>
                 </el-tooltip>
                 <!-- 数据填写组件 -->
-                <template v-for="(value, key, dataIndex) in element" :key="dataIndex">
+                <template v-for="(value, key) in element" :key="String(key)">
                   <div class="data-item" :style="getFiledStyle(value)">
                     <component
                       :is="dataSourceCptMap[value.type]"
@@ -43,12 +43,8 @@
                     </component>
                   </div>
                 </template>
-                <!-- AI组件 -->
-                <template v-for="(value, key, dataIndex) in element" :key="dataIndex">
-                  <ai-button v-model="value.value" :module-id="id"></ai-button>
-                </template>
                 <!-- 组件类型切换 -->
-                <template v-for="(value, key, dataIndex) in element" :key="dataIndex">
+                <template v-for="(value, key) in element" :key="String(key)">
                   <component-type-pop
                     v-model="value.type"
                     :content="value"
@@ -88,7 +84,6 @@
   import draggable from 'vuedraggable';
   import { Delete } from '@element-plus/icons-vue';
   import ComponentTypePop from '../../components/ComponentTypePop.vue';
-  import AiButton from '../../components/AiButton.vue';
 
   const emit = defineEmits(['update:modelValue']);
 
@@ -210,9 +205,6 @@
                 background-color: #eee;
                 border-radius: 4px;
               }
-            }
-            :deep(.ai-button-1) {
-              margin-left: 0;
             }
             .move-icon {
               cursor: move;

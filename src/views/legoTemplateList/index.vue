@@ -122,9 +122,7 @@
     }
   };
   // 查询个人创作历史
-  if (localStorage.getItem('token')) {
-    getLegoUserResumeList();
-  }
+  getLegoUserResumeList();
 
   // 卡片宽度
   const cardWidth = computed(() => {
@@ -178,7 +176,6 @@
         );
         return item;
       });
-      console.log('templateList', templateList.value);
       total.value = data.data.page.count;
       currentPage.value = data.data.page.currentPage;
       isShowSkeleton.value = false;
@@ -199,7 +196,7 @@
   const router = useRouter();
   const toPersonLego = () => {
     router.push({
-      path: '/person/legoCreate'
+      path: '/legoDesigner'
     });
   };
 
