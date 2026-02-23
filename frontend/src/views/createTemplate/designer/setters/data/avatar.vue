@@ -22,6 +22,7 @@
   import appStore from '@/store';
   import { UploadProps } from 'element-plus';
   import { useGetSelectedModule } from '../../hooks/useGetSelectedModule';
+  import { resolveUploadFileUrl } from '@/utils/upload';
 
   const props = defineProps<{
     id: string;
@@ -36,7 +37,12 @@
   };
 
   const handleAvatarSuccess: UploadProps['onSuccess'] = (response) => {
-    module.dataSource.avatar = response.data.data.fileUrl;
+    const fileUrl = resolveUploadFileUrl(response);
+    if (!fileUrl) {
+      ElMessage.error('上传成功但未拿到图片地址');
+      return;
+    }
+    module.dataSource.avatar = fileUrl;
   };
 
   const beforeAvatarUpload: UploadProps['beforeUpload'] = (rawFile) => {

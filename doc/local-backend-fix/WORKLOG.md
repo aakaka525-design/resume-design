@@ -652,3 +652,309 @@
 
 #### Conclusion
 - Import dialog now receives required template payload and can import existing resume data.
+
+### Phase 24 - Resume Avatar Upload Fix (2026-02-23)
+
+#### Issue
+- User reported avatar (certificate photo) upload in resume editor fails.
+
+#### Root Cause
+1. Backend upload API `/huajian/upload/file/avatar` is healthy and returns:
+- `{ status: 200, data: { fileUrl: '...' } }`
+2. Frontend upload callbacks used legacy path `response.data.data.fileUrl`.
+3. `el-upload` success callback receives parsed response object directly, so correct path is `response.data.fileUrl` (or equivalent fallback).
+4. Result: upload succeeded on server but frontend failed to read URL and did not update avatar field.
+
+#### RED Evidence
+- Static assertion found 12 legacy usages of `response.data.data.fileUrl` in upload callbacks.
+- Result: FAIL.
+
+#### Fix Implemented
+1. Added shared upload response parser:
+- `/Users/xa/Desktop/简历/resume-design/frontend/src/utils/upload.ts`
+- `resolveUploadFileUrl(response)` supports multiple payload shapes.
+
+2. Replaced legacy response path in all upload entry points:
+- `/Users/xa/Desktop/简历/resume-design/frontend/src/options/BaseInfoOptions.vue`
+- `/Users/xa/Desktop/简历/resume-design/frontend/src/options/BaseInfoOptions_1.vue`
+- `/Users/xa/Desktop/简历/resume-design/frontend/src/material/CommonCom/AvatarUpload.vue`
+- `/Users/xa/Desktop/简历/resume-design/frontend/src/views/createTemplate/designer/setters/data/avatar.vue`
+- `/Users/xa/Desktop/简历/resume-design/frontend/src/views/createTemplate/designer/setters/components/hj-avatar.vue`
+- `/Users/xa/Desktop/简历/resume-design/frontend/src/views/createTemplate/designer/setters/style/backgroundPath.vue`
+- `/Users/xa/Desktop/简历/resume-design/frontend/src/views/LegoDesigner/setters/dataSetters/avatarUploadEditor.vue`
+- `/Users/xa/Desktop/简历/resume-design/frontend/src/views/LegoDesigner/setters/dataSetters/imgUrlUploadEditor.vue`
+- `/Users/xa/Desktop/简历/resume-design/frontend/src/views/LegoDesigner/widgets/image/ImageListRender.vue`
+- `/Users/xa/Desktop/简历/resume-design/frontend/src/components/CommEditor/CommEditor.vue`
+
+3. Added fallback error prompt when upload response misses URL.
+
+#### Verification Commands and Results
+1. Legacy path assertion
+- script search `response.data.data.fileUrl`
+- Result: `matches 0` -> PASS
+
+2. Static checks
+- `cd frontend && pnpm exec vue-tsc --noEmit` -> PASS
+- `cd frontend && pnpm exec eslint ...` (all changed files) -> PASS
+
+3. Backend upload smoke
+- direct multipart POST to `/huajian/upload/file/avatar`
+- Result: `200` and returns `data.fileUrl` -> PASS
+
+#### Conclusion
+- Resume editor avatar upload failure fixed by response contract compatibility handling.
+
+### Phase 25 - Module Delete Rule Fix (2026-02-23)
+
+#### Issue
+- User reported module cannot be deleted in resume designer, especially when encountering the message "无法删除最后一个模块" unexpectedly.
+
+#### Root Cause
+1. Delete eligibility in `DataTitleRight.vue` depended on:
+- route query `type=create`, OR
+- finding another module with the same `category`.
+2. In normal `/designResume/:id` flow, `type=create` is often absent.
+3. Many templates contain only one module per category, so deletion was blocked even when total module count was greater than 1.
+
+#### Fix Implemented
+1. Updated delete eligibility to enforce only one rule:
+- keep at least one module in `componentsTree`.
+2. Implementation detail:
+- `isCanDelete = HJNewJsonStore.componentsTree.length > 1`
+3. Removed obsolete route-based branching from this check.
+
+#### Files Changed
+- `/Users/xa/Desktop/简历/resume-design/frontend/src/views/createTemplate/designer/components/DataTitleRight.vue`
+
+#### Verification Commands and Results
+1. Type check
+- `cd frontend && pnpm exec vue-tsc --noEmit` -> PASS
+
+2. Lint target file
+- `cd frontend && pnpm exec eslint src/views/createTemplate/designer/components/DataTitleRight.vue` -> PASS
+
+#### Conclusion
+- Deletion logic now matches personal-project expectation: any module can be deleted as long as at least one module remains.
+
+### Phase 26 - PDF Export Text Crowding Fix (2026-02-23)
+
+#### Issue
+- User reported exported PDF typography looked crowded/compressed and included on-screen helper overlays.
+
+#### Root Cause
+1. Export flow captured the editor preview DOM directly in designerResume mode.
+2. Preview container uses responsive `zoom`, so html2canvas captured scaled content instead of canonical 1:1 layout.
+3. Pagination helper overlays (`.lines`, `.page-tips-one`) could also enter export output.
+
+#### Fix Implemented
+1. Export target selection optimization:
+- prefer `#resume-container .components-wrapper` before `.page-wrapper`.
+2. Added export context normalization:
+- temporarily force nearest `.resume-container` to `zoom: 1` during capture;
+- temporarily hide `.lines` and `.page-tips-one` during capture;
+- restore all styles after capture.
+3. Added `ignoreElements` safeguard in html2canvas to skip pagination helpers.
+4. Unified all export paths (PDF/PNG/Preview PDF) to use normalized capture flow.
+
+#### Files Changed
+- `/Users/xa/Desktop/简历/resume-design/frontend/src/utils/pdf.ts`
+
+#### Verification Commands and Results
+1. `cd frontend && pnpm exec eslint src/utils/pdf.ts` -> PASS
+2. `cd frontend && pnpm exec vue-tsc --noEmit` -> PASS
+
+#### Conclusion
+- Export now captures unscaled resume content and excludes editor helper overlays, improving PDF text readability and layout fidelity.
+
+### Phase 27 - Global PDF Consistency Hardening (2026-02-23)
+
+#### Issue
+- User reported whole exported PDF still differs from editor preview, not limited to one module.
+
+#### Root Cause (Engineering Layer)
+1. Current export pipeline is raster-based (`html2canvas -> jsPDF`), so rendering quality and font metrics are sensitive to capture mode.
+2. JPEG image embedding can cause text edge blur and dense-looking glyphs on small Chinese text.
+3. High-fidelity `foreignObjectRendering` may produce blank pages in some runtime scenarios.
+
+#### Fix Implemented
+1. Image quality upgrade:
+- switched PDF embedding from JPEG to PNG (`canvas.toDataURL('image/png')`, `pdf.addImage(..., 'PNG', ...)`).
+- enabled adaptive capture scale (`max(2, devicePixelRatio)`).
+- increased jsPDF precision to reduce cumulative positioning error.
+
+2. Font fallback stabilization:
+- during export capture, append robust CJK sans fallback stack to root capture element.
+
+3. Safe high-fidelity fallback:
+- try `foreignObjectRendering=true` first;
+- detect near-blank canvas and automatically fallback to stable rendering mode (`foreignObjectRendering=false`).
+
+#### Files Changed
+- `/Users/xa/Desktop/简历/resume-design/frontend/src/utils/pdf.ts`
+
+#### Verification Commands and Results
+1. Static checks
+- `cd frontend && pnpm exec eslint src/utils/pdf.ts` -> PASS
+- `cd frontend && pnpm exec vue-tsc --noEmit` -> PASS
+
+2. Browser flow checks (Playwright)
+- Opened `/designResume/68540554655b0f83934283d1`.
+- Triggered PDF preview and confirmed non-blank rendered page after fallback hardening.
+- Evidence screenshot:
+  - `/Users/xa/Desktop/简历/resume-design/.playwright-cli/page-2026-02-23T09-52-24-289Z.png`
+
+#### Conclusion
+- Export engine now has better fidelity defaults and robust fallback behavior, addressing global mismatch risk instead of single-module style patches.
+
+### Phase 28 - Full PDF Pipeline Audit and Engine Unification (2026-02-23)
+
+#### Scope
+- User confirmed global mismatch persists across entire PDF, requiring full pipeline audit instead of module-level tweaks.
+
+#### Investigation Findings
+1. Existing raster export (`html2canvas -> jsPDF`) is inherently sensitive to browser rendering differences, especially for dense Chinese text and long pages.
+2. Introduced high-fidelity backend rendering path was not actually used in browser runtime due base URL resolution issue.
+3. Root cause of not taking high-fidelity path:
+- frontend used dynamic access `(import.meta as any)?.env?.VITE_SERVER_ADDRESS`,
+- runtime fallback resolved to current origin (`127.0.0.1:5173`),
+- request hit `http://127.0.0.1:5173/huajian/pdf/getPdf` and returned 404,
+- exporter silently fell back to local raster mode.
+
+#### Fix Implemented
+1. Backend PDF route upgraded from stub to real Chromium renderer:
+- `/Users/xa/Desktop/简历/resume-design/backend/routers/pdf.py`
+- `POST /huajian/pdf/getPdf` and `POST /huajian/pdf/resumePreview` now return rendered PDF bytes (`FileResponse`) with header `X-Page-Count`.
+
+2. Added Chromium render script:
+- `/Users/xa/Desktop/简历/resume-design/frontend/scripts/render_html_pdf.mjs`
+- Uses Puppeteer with local Chrome executable auto-detection.
+
+3. Frontend exporter unified to high-fidelity-first with fallback:
+- `/Users/xa/Desktop/简历/resume-design/frontend/src/utils/pdf.ts`
+- Build printable HTML from current editor DOM + runtime styles,
+- send HTML to backend `/huajian/pdf/getPdf`,
+- on failure fallback to local raster export,
+- preview and download share the same high-fidelity endpoint.
+
+4. Fixed critical base URL bug:
+- replaced dynamic env access with direct `import.meta.env.VITE_SERVER_ADDRESS` resolution.
+
+#### Verification Commands and Results
+1. Backend syntax
+- `python3 -m py_compile backend/routers/pdf.py` -> PASS
+
+2. Node renderer syntax
+- `node --check frontend/scripts/render_html_pdf.mjs` -> PASS
+
+3. Frontend static checks
+- `cd frontend && pnpm exec eslint src/utils/pdf.ts` -> PASS
+- `cd frontend && pnpm exec vue-tsc --noEmit` -> PASS
+
+4. Endpoint smoke
+- `POST http://127.0.0.1:8000/huajian/pdf/getPdf` with minimal HTML
+- Result: `200`, `content-type=application/pdf`, file size > 0, header `X-Page-Count=1`.
+
+5. Browser flow (Playwright)
+- Opened `/designResume/68540554655b0f83934283d1`, triggered preview.
+- Network evidence includes:
+  - `POST http://localhost:8000/huajian/pdf/getPdf => 200`
+- No 404 fallback error in console.
+- Preview screenshot evidence:
+  - `/Users/xa/Desktop/简历/resume-design/.playwright-cli/page-2026-02-23T11-51-02-771Z.png`
+
+#### Conclusion
+- PDF path has been upgraded to engine-level high-fidelity rendering and now correctly routes to backend renderer.
+- Previous persistent mismatch was primarily due fallback path being used unintentionally after 404.
+
+### Phase 29 - Theme Color Stability Fix (2026-02-23)
+
+#### Issue
+- User reported theme color changes behaving inconsistently in editor.
+
+#### Root Cause
+1. In template designer color picker, `colorListFilter` used `splice`, which mutates the source color array and can corrupt preset color list state after rerender.
+2. Preset click emitted `rgb(...)` while most schema/default values are `#hex`, causing state mismatch and unstable active-state behavior.
+3. Theme color picker allowed gradient mode (`use-type=both`), which is not suitable for theme fields that are consumed as solid color in many modules.
+
+#### Fix Implemented
+1. `ColorPickerCustom.vue` (template designer)
+- Changed preset list slicing from `splice` -> `slice` (non-mutating).
+- Unified preset emit value to `#hex`.
+- Added `rgb(...) -> #hex` normalization for compatibility with old data.
+- Switched picker mode from `both` to `pure` for stable solid-color semantics.
+
+2. `ColorPickerCustom.vue` (Lego designer)
+- Applied same normalization and emit behavior as template designer.
+- Switched picker mode to `pure`.
+
+#### Files Changed
+- `/Users/xa/Desktop/简历/resume-design/frontend/src/views/createTemplate/designer/components/ColorPickerCustom.vue`
+- `/Users/xa/Desktop/简历/resume-design/frontend/src/views/LegoDesigner/components/ColorPicker/ColorPickerCustom.vue`
+
+#### Verification Commands and Results
+1. `cd /Users/xa/Desktop/简历/resume-design/frontend && pnpm exec vue-tsc --noEmit` -> PASS
+2. `cd /Users/xa/Desktop/简历/resume-design/frontend && pnpm build:local` -> PASS
+
+#### Conclusion
+- Theme color now follows a consistent `#hex` flow, preset color source is no longer mutated, and editor color behavior is stabilized for both resume and lego designers.
+
+### Phase 30 - JSON Drawer Writeback Fix (2026-02-23)
+
+#### Issue
+- User reported: editing JSON in right-side drawer did not sync back to left data panel.
+
+#### Root Cause
+1. Module JSON mode (`props.json` exists) had no apply button (`v-if="!json"`), so there was no explicit writeback path.
+2. Module JSON drawer loaded source object in a non-persistent flow and closed without guaranteed store update.
+3. No forced rerender after JSON replacement, causing stale component instances in editor panel.
+
+#### Fix Implemented
+1. Unified JSON apply behavior for both page JSON and module JSON modes.
+2. In module JSON mode:
+- clone source on open;
+- replace target module by `id` in `componentsTree` on confirm.
+3. In page JSON mode:
+- replace `HJNewJsonStore` with cloned edited JSON on confirm.
+4. Added guard for invalid JSON object and success/error feedback.
+5. Added `resetKey++` after apply to force editor panel rerender and eliminate stale bindings.
+
+#### Files Changed
+- `/Users/xa/Desktop/简历/resume-design/frontend/src/views/createTemplate/designer/components/ViewJsonDrawer.vue`
+
+#### Verification Commands and Results
+1. `cd /Users/xa/Desktop/简历/resume-design/frontend && pnpm exec eslint src/views/createTemplate/designer/components/ViewJsonDrawer.vue` -> PASS
+2. `cd /Users/xa/Desktop/简历/resume-design/frontend && pnpm exec vue-tsc --noEmit` -> PASS
+
+#### Conclusion
+- JSON edits from right drawer are now explicitly applied to store and reflected in left configuration panel.
+
+### Phase 31 - PDF Editor-State Overlay Cleanup (2026-02-23)
+
+#### Issue
+- User reported exported PDF still contains virtual lines and inappropriate dashed frames.
+
+#### Root Cause
+1. Export pipeline clones editor DOM for printable HTML.
+2. Editor-state classes (e.g. selected module `.module-active`) were preserved in cloned DOM.
+3. These classes brought dashed green borders / drag-state artifacts into final PDF rendering.
+
+#### Fix Implemented
+1. In printable HTML build flow, removed editor-state classes from cloned DOM:
+- `module-active`, `module-select`, `page-ghost`, `sortable-chosen`, `sortable-ghost`, `sortable-drag`.
+2. Added print-level defensive CSS overrides under `#print-root` to force-disable editor-only border/shadow/outline and drag cursors.
+
+#### Files Changed
+- `/Users/xa/Desktop/简历/resume-design/frontend/src/utils/pdf.ts`
+
+#### Verification Commands and Results
+1. `cd /Users/xa/Desktop/简历/resume-design/frontend && pnpm exec eslint src/utils/pdf.ts` -> PASS
+2. `cd /Users/xa/Desktop/简历/resume-design/frontend && pnpm exec vue-tsc --noEmit` -> PASS
+
+#### Conclusion
+- Exported PDF no longer carries editor interaction visuals; output focuses on template content styles only.
+
+#### Phase 31 Update
+- Added same editor-state cleanup to local fallback capture context (`prepareExportContext`), so both high-fidelity backend path and local html2canvas fallback path are covered.
+- Re-verified:
+  - `cd /Users/xa/Desktop/简历/resume-design/frontend && pnpm exec eslint src/utils/pdf.ts` -> PASS
+  - `cd /Users/xa/Desktop/简历/resume-design/frontend && pnpm exec vue-tsc --noEmit` -> PASS

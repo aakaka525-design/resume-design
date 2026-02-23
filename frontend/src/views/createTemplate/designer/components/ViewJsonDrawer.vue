@@ -10,7 +10,7 @@
     @open="handleOpen"
   >
     <json-editor v-model="code" class="json-editor"></json-editor>
-    <div v-if="!json" class="view-json-footer">
+    <div class="view-json-footer">
       <el-button type="primary" size="default" @click="changeJSON">确认修改</el-button>
     </div>
   </el-drawer>
@@ -30,6 +30,7 @@
     drawer: false,
     json: null
   });
+  const isModuleJsonMode = computed(() => !!props.json);
 
   // 关闭弹窗
   const handleClose = () => {
@@ -41,8 +42,8 @@
   // 打开弹窗
   const handleOpen = () => {
     const { HJNewJsonStore } = storeToRefs(appStore.useCreateTemplateStore);
-    if (props.json) {
-      code.value = props.json;
+    if (isModuleJsonMode.value) {
+      code.value = cloneDeep(props.json);
       return;
     }
     code.value = cloneDeep(HJNewJsonStore.value);
@@ -50,8 +51,33 @@
 
   // 确认修改JSON
   const changeJSON = () => {
-    const { HJNewJsonStore } = storeToRefs(appStore.useCreateTemplateStore);
-    HJNewJsonStore.value = code.value;
+    const { HJNewJsonStore, selectedModuleId, resetKey } = storeToRefs(
+      appStore.useCreateTemplateStore
+    );
+    if (!code.value || typeof code.value !== 'object') {
+      ElMessage.error('JSON 格式无效，请检查后重试');
+      return;
+    }
+
+    if (isModuleJsonMode.value) {
+      const oldModuleId = props.json?.id;
+      const nextModuleId = code.value?.id;
+      const moduleIndex = HJNewJsonStore.value.componentsTree.findIndex(
+        (module: any) => module.id === oldModuleId
+      );
+      if (moduleIndex < 0) {
+        ElMessage.error('当前模块不存在，无法应用 JSON 修改');
+        return;
+      }
+      HJNewJsonStore.value.componentsTree[moduleIndex] = cloneDeep(code.value);
+      if (selectedModuleId.value === oldModuleId && nextModuleId && nextModuleId !== oldModuleId) {
+        selectedModuleId.value = nextModuleId;
+      }
+    } else {
+      HJNewJsonStore.value = cloneDeep(code.value);
+    }
+    resetKey.value += 1;
+    ElMessage.success('JSON 修改已应用');
     emit('closeJsonDrawer');
   };
 </script>

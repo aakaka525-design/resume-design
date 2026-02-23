@@ -37,6 +37,7 @@
   import { UploadProps } from 'element-plus';
   import { useGetWidgetItemById } from '../../hooks/useSelectWidgetItem';
   import appStore from '@/store';
+  import { resolveUploadFileUrl } from '@/utils/upload';
 
   interface IAvatar {
     widgetData: IWidget | null; // 模块数据
@@ -55,10 +56,13 @@
 
   // 文件上传成功
   const imageRef = ref<any>(null);
-  const handleAvatarSuccess: UploadProps['onSuccess'] = async (response: {
-    data: { data: { fileUrl: string } };
-  }) => {
-    widgetItem.dataSource.imgUrl = response.data.data.fileUrl;
+  const handleAvatarSuccess: UploadProps['onSuccess'] = async (response) => {
+    const fileUrl = resolveUploadFileUrl(response);
+    if (!fileUrl) {
+      ElMessage.error('上传成功但未拿到图片地址');
+      return;
+    }
+    widgetItem.dataSource.imgUrl = fileUrl;
   };
 
   const beforeAvatarUpload: UploadProps['beforeUpload'] = (rawFile) => {

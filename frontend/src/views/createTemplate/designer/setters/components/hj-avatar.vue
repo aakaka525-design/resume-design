@@ -29,6 +29,7 @@
   import { UploadProps } from 'element-plus';
   import { useGetSelectedModule } from '../../hooks/useGetSelectedModule';
   import { IModule } from '@/views/createTemplate/types/IHJNewSchema';
+  import { resolveUploadFileUrl } from '@/utils/upload';
 
   const props = defineProps<{
     modelValue: string;
@@ -46,7 +47,12 @@
   };
 
   const handleAvatarSuccess: UploadProps['onSuccess'] = (response) => {
-    moduleItem.dataSource[props.keyValue].value = response.data.data.fileUrl;
+    const fileUrl = resolveUploadFileUrl(response);
+    if (!fileUrl) {
+      ElMessage.error('上传成功但未拿到图片地址');
+      return;
+    }
+    moduleItem.dataSource[props.keyValue].value = fileUrl;
   };
 
   const beforeAvatarUpload: UploadProps['beforeUpload'] = (rawFile) => {

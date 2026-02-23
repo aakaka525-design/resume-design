@@ -22,6 +22,7 @@
   import { Editor, Toolbar } from '@wangeditor/editor-for-vue';
   import CONFIG from '@/config';
   import appStore from '@/store';
+  import { resolveUploadFileUrl } from '@/utils/upload';
 
   interface IEditor {
     modelValue: any;
@@ -105,9 +106,12 @@
         // 自定义插入图片
         customInsert(res: any, insertFn: any) {
           console.log('服务端返回结果', res);
-          let url = res.data.data.fileUrl;
-          let alt = res.data.data.fileName;
-          let href = res.data.data.fileUrl;
+          const url = resolveUploadFileUrl(res);
+          if (!url) {
+            return;
+          }
+          const alt = res?.data?.fileName || res?.data?.data?.fileName || '';
+          const href = url;
           insertFn(url, alt, href);
         },
         /*******回调函数********/

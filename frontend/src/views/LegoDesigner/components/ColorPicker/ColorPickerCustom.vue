@@ -11,18 +11,16 @@
             :is-widget="true"
             :pure-color="pureColor"
             shape="circle"
-            use-type="both"
+            use-type="pure"
             :round-history="true"
-            :gradient-color="gradientColor"
             @pure-color-change="pureColorChange"
-            @gradient-color-change="gradientColorChange"
           />
         </div>
       </el-popover>
     </div>
     <div v-for="(item, index) in colorList" :key="item.hex" :class="['item-box']">
       <span
-        :class="['item', { active: index === curentIndex || modelValue === item.rgb }]"
+        :class="['item', { active: index === curentIndex || normalizedModelValue === item.hex }]"
         :style="{
           'background-color': item.hex
         }"
@@ -46,8 +44,38 @@
 
   const emit = defineEmits(['update:modelValue', 'change']);
 
-  const pureColor = ref(props.modelValue.indexOf('#') !== -1 ? props.modelValue : '');
-  const gradientColor = ref(props.modelValue.indexOf('#') !== -1 ? '' : props.modelValue);
+  const RGB_COLOR_PATTERN = /^rgb\s*\(\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})\s*\)$/i;
+
+  const normalizeThemeColor = (value?: string) => {
+    if (!value || typeof value !== 'string') {
+      return '';
+    }
+    const trimmedValue = value.trim();
+    const matchedValue = trimmedValue.match(RGB_COLOR_PATTERN);
+    if (!matchedValue) {
+      return trimmedValue;
+    }
+    const [red, green, blue] = matchedValue.slice(1, 4).map((num) => {
+      const normalized = Math.max(0, Math.min(255, Number(num) || 0));
+      return normalized.toString(16).padStart(2, '0');
+    });
+    return `#${red}${green}${blue}`;
+  };
+
+  const pureColor = ref<string>('');
+
+  const normalizedModelValue = computed(() => normalizeThemeColor(props.modelValue));
+
+  watch(
+    () => props.modelValue,
+    (newVal) => {
+      const normalizedValue = normalizeThemeColor(newVal);
+      pureColor.value = normalizedValue.startsWith('#') ? normalizedValue : '';
+    },
+    {
+      immediate: true
+    }
+  );
 
   // 颜色列表
   const colorList = reactive<Array<{ rgb: string; hex: string }>>([
@@ -92,26 +120,17 @@
   // 更改主题色
   const curentIndex = ref<number>(-1);
   const changTheme = (index: number, item: { rgb: string; hex: string }) => {
-    console.log('主题色改变', item);
     curentIndex.value = index;
-    emit('update:modelValue', item.rgb);
-    emit('change', item.rgb);
+    emit('update:modelValue', item.hex);
+    emit('change', item.hex);
   };
 
   // 纯色改变
   const pureColorChange = (value: string) => {
-    console.log('纯色改变', value);
+    const normalizedValue = normalizeThemeColor(value);
     curentIndex.value = -1;
-    emit('update:modelValue', value);
-    emit('change', value);
-  };
-
-  // 渐变色改变
-  const gradientColorChange = (value: string) => {
-    console.log('渐变色改变', value);
-    curentIndex.value = -1;
-    emit('update:modelValue', value);
-    emit('change', value);
+    emit('update:modelValue', normalizedValue);
+    emit('change', normalizedValue);
   };
 </script>
 <style lang="scss" scoped>

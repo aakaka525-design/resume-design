@@ -94,18 +94,8 @@
   }>();
   const { selectedModuleId, HJNewJsonStore } = storeToRefs(appStore.useCreateTemplateStore);
 
-  // 当前模块是否允许删除
-  const route = useRoute();
-  const isCanDelete = computed(() => {
-    if (route.query.type === 'create') return true;
-    for (let i = 0; i < HJNewJsonStore.value.componentsTree.length; i++) {
-      const element = HJNewJsonStore.value.componentsTree[i];
-      if (props.id !== element.id && props.module.category === element.category) {
-        return true;
-      }
-    }
-    return false;
-  });
+  // 当前模块是否允许删除：始终至少保留一个模块
+  const isCanDelete = computed(() => HJNewJsonStore.value.componentsTree.length > 1);
 
   // 点击删除图标
   const handleDeleteIcon = () => {

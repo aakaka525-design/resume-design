@@ -18,6 +18,7 @@
   import type { UploadProps } from 'element-plus';
   import useDesignSelectModelItem from '@/hooks/material/useDesignSelectModelItem';
   import appStore from '@/store';
+  import { resolveUploadFileUrl } from '@/utils/upload';
 
   // 选中的模块
   const { modelItem } = useDesignSelectModelItem();
@@ -29,8 +30,13 @@
   };
 
   const handleAvatarSuccess: UploadProps['onSuccess'] = (response) => {
-    imageUrl.value = response.data.data.fileUrl;
-    modelItem.data.avatar = response.data.data.fileUrl;
+    const fileUrl = resolveUploadFileUrl(response);
+    if (!fileUrl) {
+      ElMessage.error('上传成功但未拿到图片地址');
+      return;
+    }
+    imageUrl.value = fileUrl;
+    modelItem.data.avatar = fileUrl;
   };
 
   const beforeAvatarUpload: UploadProps['beforeUpload'] = (rawFile) => {
