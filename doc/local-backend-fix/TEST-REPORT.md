@@ -1,7 +1,10 @@
 # Test Report
 
+> Path note: `resume-backend` in historical sections refers to the pre-rename path.  
+> Current canonical backend path is `/Users/xa/Desktop/简历/resume-design/backend`.
+
 ## Environment
-- Backend path: `/Users/xa/Desktop/简历/resume-backend`
+- Backend path: `/Users/xa/Desktop/简历/resume-design/backend`
 - Python env: `venv`
 - Date: `2026-02-22`
 

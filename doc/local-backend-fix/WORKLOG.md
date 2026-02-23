@@ -1,5 +1,8 @@
 # Worklog
 
+> Path note: historical entries may mention `resume-backend` and old frontend root paths.  
+> Since 2026-02-23, canonical paths are `backend/` and `frontend/`.
+
 ## 2026-02-22
 
 ### Phase 0 - Initialization

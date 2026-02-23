@@ -1,12 +1,15 @@
 # Local Backend Fix Plan
 
+> Path note: `resume-backend` in earlier sections is the old folder name before 2026-02-23.  
+> Current canonical backend path is `backend/`.
+
 ## Goal
 - Keep resume editing workflows available for local personal use.
 - Remove high-risk security issues (path traversal, guessable default password, broad ID-based updates).
 - Keep non-core modules (payment/membership) as simple stubs.
 
 ## Scope
-- Backend hardening in `/Users/xa/Desktop/简历/resume-backend`.
+- Backend hardening in `/Users/xa/Desktop/简历/resume-design/backend`.
 - Add missing lego export stub APIs required by frontend.
 - Document execution and test evidence in this folder.
 
