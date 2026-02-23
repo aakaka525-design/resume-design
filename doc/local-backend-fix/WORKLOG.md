@@ -403,3 +403,50 @@
 #### Conclusion
 - `/resume` filter-vs-card overlap removed.
 - Scroll behavior is now stable for personal local usage.
+
+### Phase 19 - Frontend/Backend Directory Reorganization (2026-02-23)
+
+#### Background
+- User confirmed repository should use clear top-level `frontend + backend` layout.
+- Current mixed structure (`frontend files at root + resume-backend subdir`) was not acceptable.
+
+#### File and Structure Changes
+1. Repository layout migration:
+- Moved frontend project files from root into `/Users/xa/Desktop/简历/resume-design/frontend`.
+- Renamed backend folder from `/Users/xa/Desktop/简历/resume-design/resume-backend` to `/Users/xa/Desktop/简历/resume-design/backend`.
+
+2. Path and startup alignment:
+- Updated `/Users/xa/Desktop/简历/resume-design/README.md` to new monorepo layout and startup commands.
+- Updated `/Users/xa/Desktop/简历/resume-design/scripts/local_stack_probe.sh`:
+  - default backend dir -> `./backend`
+  - added frontend dir option/default -> `./frontend`
+  - frontend file checks switched to `frontend/package.json` and `frontend/pnpm-lock.yaml`.
+- Updated Husky scripts:
+  - `/Users/xa/Desktop/简历/resume-design/.husky/commit-msg` now runs `pnpm` from `frontend/`.
+  - `/Users/xa/Desktop/简历/resume-design/.husky/pre-commit` command hints switched to `cd frontend && ...`.
+- Updated `/Users/xa/Desktop/简历/resume-design/frontend/package.json`:
+  - `postinstall` changed to `cd .. && husky install` for new repo root.
+
+3. Runtime artifact cleanup:
+- Removed root runtime artifacts generated before migration (`node_modules`, `dist`, `.playwright-cli`).
+- Removed backend runtime cache directories (`backend/**/__pycache__`).
+
+#### Commands and Results
+1. Frontend dependency/bootstrap:
+- `cd /Users/xa/Desktop/简历/resume-design/frontend && pnpm install` -> PASS (after postinstall path fix).
+
+2. Frontend static/build verification:
+- `cd /Users/xa/Desktop/简历/resume-design/frontend && pnpm exec vue-tsc --noEmit` -> PASS
+- `cd /Users/xa/Desktop/简历/resume-design/frontend && pnpm exec eslint src/views/designer/index.vue src/views/designerResume/index.vue src/views/resumeList/components/CategoryList.vue` -> PASS
+- `cd /Users/xa/Desktop/简历/resume-design/frontend && pnpm build:dev` -> PASS (only third-party warnings).
+
+3. Backend verification:
+- `cd /Users/xa/Desktop/简历/resume-design/backend && python3 -m py_compile main.py config.py deps.py routers/*.py models/*.py` -> PASS
+
+4. Stack probe verification:
+- `cd /Users/xa/Desktop/简历/resume-design && bash scripts/local_stack_probe.sh --dry-run` -> PASS
+
+#### Conclusion
+- Repository layout now matches requested structure (`frontend/` + `backend/`).
+- Core local editing workflow remains verifiable under the new path model.
+- Documentation and helper scripts are now consistent with the reorganized directory tree.

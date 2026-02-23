@@ -377,3 +377,42 @@ Date: `2026-02-22`
 
 ### Artifact
 1. `/Users/xa/Desktop/简历/resume-design/.playwright-cli/page-2026-02-22T15-23-55-680Z.png`
+
+## 15) Repository Layout Reorganization Check (`frontend + backend`)
+Date: `2026-02-23`
+
+### Scope
+1. Validate top-level directory migration to `frontend/` + `backend/`.
+2. Validate startup/probe path alignment.
+3. Validate frontend/backend basic compile/build checks after migration.
+
+### Structure Result
+1. Repo root now contains:
+- `/Users/xa/Desktop/简历/resume-design/frontend`
+- `/Users/xa/Desktop/简历/resume-design/backend`
+- `/Users/xa/Desktop/简历/resume-design/doc`
+- `/Users/xa/Desktop/简历/resume-design/scripts`
+
+2. Previous backend path `resume-backend/` is removed from active layout (renamed to `backend/`).
+
+### Verification Commands and Results
+1. Frontend install:
+- `cd /Users/xa/Desktop/简历/resume-design/frontend && pnpm install` -> PASS
+- Note: `postinstall` adjusted to run Husky from repo root in new layout.
+
+2. Frontend static/build checks:
+- `cd /Users/xa/Desktop/简历/resume-design/frontend && pnpm exec vue-tsc --noEmit` -> PASS
+- `cd /Users/xa/Desktop/简历/resume-design/frontend && pnpm exec eslint src/views/designer/index.vue src/views/designerResume/index.vue src/views/resumeList/components/CategoryList.vue` -> PASS
+- `cd /Users/xa/Desktop/简历/resume-design/frontend && pnpm build:dev` -> PASS
+
+3. Backend syntax check:
+- `cd /Users/xa/Desktop/简历/resume-design/backend && python3 -m py_compile main.py config.py deps.py routers/*.py models/*.py` -> PASS
+
+4. Script path check:
+- `cd /Users/xa/Desktop/简历/resume-design && bash scripts/local_stack_probe.sh --dry-run` -> PASS
+- Verified script now checks `./frontend` and `./backend` by default.
+
+### Conclusion
+- Directory structure now matches requested monorepo shape.
+- Frontend/backend adaptation is valid under new paths.
+- Core resume+lego local editing chain remains buildable and testable.

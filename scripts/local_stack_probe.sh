@@ -4,9 +4,11 @@ IFS=$'\n\t'
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
-BACKEND_DIR_DEFAULT="$(cd "${PROJECT_DIR}/../resume-backend" 2>/dev/null && pwd || true)"
+BACKEND_DIR_DEFAULT="$(cd "${PROJECT_DIR}/backend" 2>/dev/null && pwd || true)"
+FRONTEND_DIR_DEFAULT="$(cd "${PROJECT_DIR}/frontend" 2>/dev/null && pwd || true)"
 
 BACKEND_DIR="${BACKEND_DIR_DEFAULT}"
+FRONTEND_DIR="${FRONTEND_DIR_DEFAULT}"
 BACKEND_URL="http://127.0.0.1:8000"
 FRONTEND_URL="http://127.0.0.1:5173"
 TIMEOUT=3
@@ -41,7 +43,8 @@ Usage:
   local_stack_probe.sh [options]
 
 Options:
-  --backend-dir <dir>      Backend project directory (default: ../resume-backend)
+  --backend-dir <dir>      Backend project directory (default: ./backend)
+  --frontend-dir <dir>     Frontend project directory (default: ./frontend)
   --backend-url <url>      Backend base URL (default: http://127.0.0.1:8000)
   --frontend-url <url>     Frontend base URL (default: http://127.0.0.1:5173)
   --timeout <sec>          curl timeout seconds (default: 3)
@@ -111,6 +114,11 @@ while (($#)); do
       BACKEND_DIR="$2"
       shift 2
       ;;
+    --frontend-dir)
+      [[ $# -ge 2 ]] || die "missing value for --frontend-dir"
+      FRONTEND_DIR="$2"
+      shift 2
+      ;;
     --backend-url)
       [[ $# -ge 2 ]] || die "missing value for --backend-url"
       BACKEND_URL="$2"
@@ -153,8 +161,10 @@ require_cmd pnpm
 require_cmd python3
 
 check_dir "${PROJECT_DIR}"
-check_file "${PROJECT_DIR}/package.json"
-check_file "${PROJECT_DIR}/pnpm-lock.yaml"
+[[ -n "${FRONTEND_DIR}" ]] || die "frontend directory is empty, set --frontend-dir explicitly"
+check_dir "${FRONTEND_DIR}"
+check_file "${FRONTEND_DIR}/package.json"
+check_file "${FRONTEND_DIR}/pnpm-lock.yaml"
 
 [[ -n "${BACKEND_DIR}" ]] || die "backend directory is empty, set --backend-dir explicitly"
 check_dir "${BACKEND_DIR}"

@@ -19,7 +19,7 @@
     "eslint": "eslint --ext .js,.vue --ignore-path .gitignore --fix src",
     "prettier": "prettier . --write",
     "commit": "git-cz",
-    "postinstall": "husky install",
+    "postinstall": "cd .. && husky install",
     "fix-memory-limit": "cross-env LIMIT=4096 increase-memory-limit"
   },
   "config": {

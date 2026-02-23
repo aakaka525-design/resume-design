@@ -94,3 +94,22 @@
 - Playwright checks:
   - `/designer` component list recovered and console errors cleared.
   - `/designResume/:id` overlap area reduced to `0`.
+
+## 2026-02-23 Repository Layout Reorganization (Executed)
+
+### Objective
+- Fix repository structure to a clear top-level layout: `frontend/ + backend/`.
+- Keep local personal resume/lego editing chain behavior unchanged.
+- Keep documentation and probe scripts aligned with the new paths.
+
+### Executed Items
+1. Moved frontend project from repo root into `frontend/`.
+2. Renamed `resume-backend/` to `backend/`.
+3. Updated root startup docs and probe script defaults to `./frontend` and `./backend`.
+4. Updated Husky path usage for frontend package location.
+5. Re-ran frontend/backend validations after path migration.
+
+### New Canonical Paths
+- Frontend: `/Users/xa/Desktop/简历/resume-design/frontend`
+- Backend: `/Users/xa/Desktop/简历/resume-design/backend`
+- Docs: `/Users/xa/Desktop/简历/resume-design/doc/local-backend-fix`
