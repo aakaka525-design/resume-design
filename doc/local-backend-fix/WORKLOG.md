@@ -958,3 +958,41 @@
 - Re-verified:
   - `cd /Users/xa/Desktop/简历/resume-design/frontend && pnpm exec eslint src/utils/pdf.ts` -> PASS
   - `cd /Users/xa/Desktop/简历/resume-design/frontend && pnpm exec vue-tsc --noEmit` -> PASS
+
+### Phase 32 - PDF Download Payload Guard (2026-02-26)
+
+#### Issue
+- User reported: clicking "下载 PDF" in frontend may still produce a non-PDF file.
+
+#### Root Cause
+1. Resume export (`frontend/src/utils/pdf.ts`) only checked HTTP status and blob size, but did not validate response MIME/file header.
+2. When backend/proxy returns HTML/JSON with `200`, frontend could still save it as `.pdf`.
+3. Lego export (`frontend/src/views/LegoDesigner/utils/pdf.ts`) had the same gap and force-wrapped unknown payloads into `application/pdf` or `application/image`.
+
+#### Fix Implemented
+1. Added export payload guards in:
+- `/Users/xa/Desktop/简历/resume-design/frontend/src/utils/exportGuards.ts`
+- `assertPdfBlob`: validates MIME + `%PDF-` signature.
+- `assertPngBlob`: validates MIME + PNG magic header.
+2. Integrated guard into resume high-fidelity export pipeline:
+- `/Users/xa/Desktop/简历/resume-design/frontend/src/utils/pdf.ts`
+- `requestHighFidelityPdf` now rejects non-PDF payloads before download.
+3. Integrated guard into lego export pipeline:
+- `/Users/xa/Desktop/简历/resume-design/frontend/src/views/LegoDesigner/utils/pdf.ts`
+- Replaced force-blob wrapping logic with validated blob + `saveAs`.
+
+#### TDD / Verification Commands and Results
+1. RED (failing-first regression check)
+- `cd frontend && pnpm exec ts-node --compiler-options '{"module":"commonjs"}' scripts/pdf_blob_guard_check.ts`
+- Initial failure: `Cannot find module '../src/utils/exportGuards'` (expected before implementation).
+
+2. GREEN (after implementation)
+- `cd frontend && pnpm exec ts-node --compiler-options '{"module":"commonjs"}' scripts/pdf_blob_guard_check.ts` -> PASS (`pdf_blob_guard_check passed`)
+
+3. Static checks
+- `cd frontend && pnpm exec vue-tsc --noEmit` -> PASS
+- `cd frontend && pnpm exec eslint src/utils/pdf.ts src/utils/exportGuards.ts src/views/LegoDesigner/utils/pdf.ts` -> PASS
+
+#### Conclusion
+- Frontend now blocks non-PDF/non-PNG payloads from being downloaded with fake extensions.
+- Resume export path will fallback to local PDF generation when high-fidelity endpoint returns invalid content.

@@ -795,3 +795,43 @@ Date: `2026-02-23`
 2. Re-check results:
 - `cd /Users/xa/Desktop/简历/resume-design/frontend && pnpm exec eslint src/utils/pdf.ts` -> PASS
 - `cd /Users/xa/Desktop/简历/resume-design/frontend && pnpm exec vue-tsc --noEmit` -> PASS
+
+## 28) PDF Download Payload Validation (Prevent Fake .pdf)
+Date: `2026-02-26`
+
+### Scope
+1. Verify non-PDF payloads are rejected before download.
+2. Verify PNG export path also validates binary format.
+3. Verify resume and lego export chains both use the same payload safety rule.
+
+### Root Cause Summary
+1. Export flow accepted any non-empty blob and saved it with `.pdf` extension.
+2. If backend/proxy returned HTML/JSON with HTTP 200, user got a fake `.pdf` file.
+3. Lego export additionally re-wrapped arbitrary payloads into forced MIME types.
+
+### Verification
+1. Regression script (RED -> GREEN)
+- Script: `/Users/xa/Desktop/简历/resume-design/frontend/scripts/pdf_blob_guard_check.ts`
+- RED command (before implementation):
+  - `cd /Users/xa/Desktop/简历/resume-design/frontend && pnpm exec ts-node --compiler-options '{"module":"commonjs"}' scripts/pdf_blob_guard_check.ts`
+  - Result: FAIL (`Cannot find module '../src/utils/exportGuards'`)
+- GREEN command (after implementation):
+  - same command
+  - Result: PASS (`pdf_blob_guard_check passed`)
+
+2. Code-level assertions
+- Added guard utils:
+  - `/Users/xa/Desktop/简历/resume-design/frontend/src/utils/exportGuards.ts`
+- Resume PDF path uses `assertPdfBlob`:
+  - `/Users/xa/Desktop/简历/resume-design/frontend/src/utils/pdf.ts`
+- Lego PDF/PNG paths use `assertPdfBlob` / `assertPngBlob`:
+  - `/Users/xa/Desktop/简历/resume-design/frontend/src/views/LegoDesigner/utils/pdf.ts`
+- Status: PASS
+
+3. Static checks
+- `cd /Users/xa/Desktop/简历/resume-design/frontend && pnpm exec vue-tsc --noEmit` -> PASS
+- `cd /Users/xa/Desktop/简历/resume-design/frontend && pnpm exec eslint src/utils/pdf.ts src/utils/exportGuards.ts src/views/LegoDesigner/utils/pdf.ts` -> PASS
+
+### Conclusion
+- Frontend no longer saves HTML/JSON error payload as fake `.pdf`.
+- User-visible behavior is now deterministic: valid PDF/PNG downloads only.

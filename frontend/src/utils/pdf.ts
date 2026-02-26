@@ -4,6 +4,7 @@ import { ElMessage } from 'element-plus';
 import { jsPDF } from 'jspdf';
 import { addMakeResumeCountAsync } from '@/http/api/resume';
 import appStore from '@/store';
+import { assertPdfBlob } from '@/utils/exportGuards';
 
 const FALLBACK_SANS_STACK =
   '"Microsoft YaHei","PingFang SC","Hiragino Sans GB","Noto Sans CJK SC","Source Han Sans SC",sans-serif';
@@ -427,9 +428,7 @@ const requestHighFidelityPdf = async (
   }
 
   const blob = await response.blob();
-  if (!blob || blob.size <= 0) {
-    throw new Error('高保真PDF服务返回空文件');
-  }
+  await assertPdfBlob(blob, response.headers.get('content-type'));
 
   const rawPageCount = Number(response.headers.get('X-Page-Count') || '1');
   const pageCount = Number.isFinite(rawPageCount) && rawPageCount > 0 ? rawPageCount : 1;
